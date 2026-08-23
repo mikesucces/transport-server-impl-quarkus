@@ -1,0 +1,39 @@
+# Environnement front : API + base pré-remplie, prêt à l'emploi.
+#   docker compose up
+#   Swagger UI : http://localhost:8080/swagger-ui/
+#   API        : http://localhost:8080/api
+# Aucun token requis (DEV_BYPASS_ROLES=true, désactivé par défaut sinon).
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: transit
+      POSTGRES_PASSWORD: transit
+      POSTGRES_DB: transit
+    ports:
+      - "5432:5432"
+    volumes:
+      - transport-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U transit"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  api:
+    image: ghcr.io/mikesucces/transport-server-impl-quarkus:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/transit
+      DB_USER: transit
+      DB_PASSWORD: transit
+      OIDC_ENABLED: "false"
+      DEV_BYPASS_ROLES: "true"
+    ports:
+      - "8080:8080"
+
+volumes:
+  transport-db-data:
