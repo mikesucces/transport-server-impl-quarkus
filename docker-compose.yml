@@ -1,5 +1,6 @@
 # Environnement front : API + base pré-remplie, prêt à l'emploi.
-#   docker compose up
+#   1. mvn package -DskipTests   (nécessite Java 21 + Maven ; produit target/quarkus-app)
+#   2. docker compose up --build
 #   Swagger UI : http://localhost:8080/swagger-ui/
 #   API        : http://localhost:8080/api
 # Aucun token requis (DEV_BYPASS_ROLES=true, désactivé par défaut sinon).
@@ -22,7 +23,9 @@ services:
       retries: 10
 
   api:
-    image: ghcr.io/mikesucces/transport-server-impl-quarkus:latest
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
     depends_on:
       db:
         condition: service_healthy
