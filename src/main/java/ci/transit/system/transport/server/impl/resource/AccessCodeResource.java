@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import ci.transit.system.transport.server.impl.dto.AccessCodeDto;
 import ci.transit.system.transport.server.impl.dto.AccessCodeGenerateRequest;
-import ci.transit.system.transport.server.impl.dto.AccessCodeGeneratedDto;
 import ci.transit.system.transport.server.impl.dto.AccessCodeRequest;
 import ci.transit.system.transport.server.impl.service.AccessCodeService;
 import jakarta.annotation.security.RolesAllowed;
