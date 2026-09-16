@@ -29,6 +29,7 @@ feuille de route (voir les commentaires de `V1__auth_schema.sql`) :
 | **Abonnements / Paiements** (M5) | `subscriptions`, `payments` | ✅ §10ter |
 | **Lignes** (M6) | `routes`, `route_schedules` | ✅ §8quater |
 | **Tableau de bord global** (M7) | — (agrégation, pas de nouvelle table) | ✅ §8quinquies |
+| **Moyens de paiement** (M9) | `payment_accounts` | ✅ §10quinquies |
 
 `staff_profiles` et Keycloak restent la source de vérité pour les comptes/rôles :
 l'API ne gère ni login, ni mot de passe, ni session pour le personnel — uniquement
@@ -641,6 +642,7 @@ terrain, même logique que la génération de code en M4).
 | `amount` | number | oui | `≥ 0`, montant du premier paiement (FCFA) |
 | `method` | enum `PaymentMethod` | oui | `ESPECES`, `MOBILE_MONEY`, `VIREMENT`, `AUTRE` |
 | `collectedBy` | UUID | non | champ libre, non validé contre une table |
+| `paymentAccountId` | UUID | non | moyen de paiement enregistré (M9, §10quinquies) — doit appartenir au même usager, sinon `400` |
 
 Crée l'abonnement (`startsOn = aujourd'hui`, `endsOn = aujourd'hui + durée du
 plan`, `status = ACTIVE`) **et** le paiement associé en une seule opération.
@@ -678,6 +680,7 @@ Le ledger complet des encaissements ; écriture uniquement via
 | `amount` | number | FCFA |
 | `method` | enum `PaymentMethod` | |
 | `collectedBy` | UUID | champ libre, peut être `null` |
+| `paymentAccountId` | UUID | moyen de paiement enregistré utilisé, peut être `null` (M9) |
 | `paidAt` | date-heure | |
 
 | Méthode | Path | Rôles |
@@ -732,6 +735,40 @@ atteignable par aucun champ de `DriverRequest` — c'est désormais possible
 via `PUT /drivers/{id}` (ou `POST /drivers`). Un profil rattaché à un
 chauffeur ne peut pas être supprimé (`DELETE /staff-profiles/{id}` renvoie
 `400`) tant que le chauffeur n'est pas détaché ou supprimé.
+
+---
+
+## 10quinquies. Moyens de paiement enregistrés (`/payment-accounts`)
+
+Module M9 : un usager peut enregistrer un ou plusieurs moyens de paiement
+réutilisables (numéro Mobile Money, compte…) au lieu de resaisir une
+référence à chaque paiement d'abonnement.
+
+| Champ | Type | Obligatoire (création) | Règles |
+|---|---|---|---|
+| `identifier` | UUID | — | généré, lecture seule |
+| `passengerIdentifier` | UUID | oui (`passengerId` en écriture) | usager existant |
+| `method` | enum `PaymentMethod` | oui | `ESPECES`, `MOBILE_MONEY`, `VIREMENT`, `AUTRE` |
+| `label` | string | non | libellé libre (ex. « Orange Money principal ») |
+| `reference` | string | oui | numéro/compte du moyen de paiement |
+| `defaultAccount` | boolean | non | défaut `false` — un seul moyen par défaut actif par usager (en fixer un nouveau désactive automatiquement l'ancien) |
+| `active` | boolean | non | défaut `true` |
+
+### Endpoints
+
+| Méthode | Path | Rôles | Description |
+|---|---|---|---|
+| GET | `/payment-accounts/{id}` | OWNER, MANAGER, CONTROLLER | détail |
+| POST | `/payment-accounts` | OWNER, MANAGER, CONTROLLER | création |
+| PUT | `/payment-accounts/{id}` | OWNER, MANAGER | remplacement complet |
+| PATCH | `/payment-accounts/{id}/active` | OWNER, MANAGER | `{ "active": "false" }` |
+| DELETE | `/payment-accounts/{id}` | OWNER | suppression |
+| GET | `/passengers/{id}/payment-accounts` | OWNER, MANAGER, CONTROLLER | liste par usager |
+
+Un moyen de paiement enregistré peut être référencé par `paymentAccountId`
+lors de la souscription/renouvellement d'un abonnement (voir §10ter) — le
+serveur vérifie qu'il appartient bien à l'usager de l'abonnement, sinon
+`400`.
 
 ---
 

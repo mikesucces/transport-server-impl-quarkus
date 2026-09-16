@@ -41,6 +41,7 @@ public final class SubscriptionMapper {
         dto.amount = entity.getAmount();
         dto.method = entity.getMethod().name();
         dto.collectedBy = entity.getCollectedBy();
+        dto.paymentAccountId = entity.getPaymentAccount() != null ? entity.getPaymentAccount().getUuid() : null;
         dto.paidAt = entity.getPaidAt();
         return dto;
     }

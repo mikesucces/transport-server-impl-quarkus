@@ -18,5 +18,6 @@ public class PaymentDto {
   public BigDecimal amount;
   public String method;
   public UUID collectedBy;
+  public UUID paymentAccountId;
   public Instant paidAt;
 }

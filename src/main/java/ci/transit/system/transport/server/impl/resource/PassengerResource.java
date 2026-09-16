@@ -6,8 +6,10 @@ import java.util.UUID;
 
 import ci.transit.system.transport.server.impl.dto.PassengerDto;
 import ci.transit.system.transport.server.impl.dto.PassengerRequest;
+import ci.transit.system.transport.server.impl.dto.PaymentAccountDto;
 import ci.transit.system.transport.server.impl.dto.SubscriptionDto;
 import ci.transit.system.transport.server.impl.service.PassengerService;
+import ci.transit.system.transport.server.impl.service.PaymentAccountService;
 import ci.transit.system.transport.server.impl.service.SubscriptionService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -26,6 +28,9 @@ public class PassengerResource {
 
     @Inject
     SubscriptionService subscriptionService;
+
+    @Inject
+    PaymentAccountService paymentAccountService;
 
     @GET
     @RolesAllowed({"OWNER", "MANAGER", "CONTROLLER"})
@@ -74,5 +79,12 @@ public class PassengerResource {
     @RolesAllowed({"OWNER", "MANAGER", "CONTROLLER"})
     public List<SubscriptionDto> getPassengerSubscriptions(@PathParam("id") UUID identifier) {
         return subscriptionService.findByPassenger(identifier);
+    }
+
+    @GET
+    @Path("/{id}/payment-accounts")
+    @RolesAllowed({"OWNER", "MANAGER", "CONTROLLER"})
+    public List<PaymentAccountDto> getPassengerPaymentAccounts(@PathParam("id") UUID identifier) {
+        return paymentAccountService.findByPassenger(identifier);
     }
 }

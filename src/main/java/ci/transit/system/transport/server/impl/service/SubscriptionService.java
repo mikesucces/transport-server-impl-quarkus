@@ -14,9 +14,11 @@ import ci.transit.system.transport.server.impl.ennumerations.PaymentMethod;
 import ci.transit.system.transport.server.impl.ennumerations.SubscriptionPlan;
 import ci.transit.system.transport.server.impl.ennumerations.SubscriptionStatus;
 import ci.transit.system.transport.server.impl.persistence.identity.Passenger;
+import ci.transit.system.transport.server.impl.persistence.payment.PaymentAccount;
 import ci.transit.system.transport.server.impl.persistence.subscription.Payment;
 import ci.transit.system.transport.server.impl.persistence.subscription.Subscription;
 import ci.transit.system.transport.server.impl.repository.PassengerRepository;
+import ci.transit.system.transport.server.impl.repository.PaymentAccountRepository;
 import ci.transit.system.transport.server.impl.repository.PaymentRepository;
 import ci.transit.system.transport.server.impl.repository.SubscriptionRepository;
 import ci.transit.system.transport.server.impl.utilities.ApiException;
@@ -35,6 +37,9 @@ public class SubscriptionService {
 
     @Inject
     PassengerRepository passengerRepository;
+
+    @Inject
+    PaymentAccountRepository paymentAccountRepository;
 
     public List<SubscriptionDto> findAll(UUID passengerId, String status) {
         List<Subscription> subscriptions;
@@ -70,7 +75,7 @@ public class SubscriptionService {
         subscription.setEndsOn(LocalDate.now().plusDays(planDurationDays(plan)));
         Subscription saved = subscriptionRepository.save(subscription);
 
-        recordPayment(saved, request.amount, request.method, request.collectedBy);
+        recordPayment(saved, request.amount, request.method, request.collectedBy, request.paymentAccountId);
         return toDetail(saved);
     }
 
@@ -87,7 +92,7 @@ public class SubscriptionService {
         subscription.setUpdatedAt(Instant.now());
         Subscription saved = subscriptionRepository.save(subscription);
 
-        recordPayment(saved, request.amount, request.method, request.collectedBy);
+        recordPayment(saved, request.amount, request.method, request.collectedBy, request.paymentAccountId);
         return toDetail(saved);
     }
 
@@ -107,13 +112,27 @@ public class SubscriptionService {
     }
 
     private void recordPayment(Subscription subscription, java.math.BigDecimal amount,
-                                String method, UUID collectedBy) {
+                                String method, UUID collectedBy, UUID paymentAccountId) {
         Payment payment = new Payment();
         payment.setSubscription(subscription);
         payment.setAmount(amount);
         payment.setMethod(parseMethod(method));
         payment.setCollectedBy(collectedBy);
+        if (paymentAccountId != null) {
+            payment.setPaymentAccount(requirePaymentAccount(paymentAccountId, subscription.getPassenger().getUuid()));
+        }
         paymentRepository.save(payment);
+    }
+
+    private PaymentAccount requirePaymentAccount(UUID identifier, UUID passengerIdentifier) {
+        PaymentAccount account = paymentAccountRepository.findById(identifier);
+        if (account == null) {
+            throw ApiException.notFound("Moyen de paiement introuvable");
+        }
+        if (!account.getPassenger().getUuid().equals(passengerIdentifier)) {
+            throw ApiException.badRequest("Ce moyen de paiement n'appartient pas a cet usager");
+        }
+        return account;
     }
 
     private SubscriptionDetailDto toDetail(Subscription subscription) {

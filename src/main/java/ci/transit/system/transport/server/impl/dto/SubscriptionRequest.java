@@ -30,4 +30,7 @@ public class SubscriptionRequest {
   public String method;
 
   public UUID collectedBy;
+
+  /** Moyen de paiement enregistre a utiliser, optionnel. */
+  public UUID paymentAccountId;
 }
