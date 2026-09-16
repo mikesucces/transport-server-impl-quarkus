@@ -1,9 +1,10 @@
-# Guide API — Transport Server (module Flotte)
+# Guide API — Transport Server
 
 Ce document décrit l'API REST exposée par `transport-server-impl-quarkus` pour le
-développement du front. Il couvre uniquement ce qui est **réellement implémenté**
-aujourd'hui : le référentiel flotte (véhicules, documents, entretiens, chauffeurs) et
-le tableau de bord associé.
+développement du front. Il couvre ce qui est **réellement implémenté** aujourd'hui :
+le référentiel flotte (véhicules, documents, entretiens, chauffeurs) et son tableau
+de bord, les usagers et leurs codes d'accès, les rotations (affectation chauffeur/
+véhicule) et le contrôle/embarquement (génération de code + vérification).
 
 > Pour explorer l'API de façon interactive : **Swagger UI** sur
 > `http://localhost:8080/api/swagger-ui` (spec OpenAPI brute sur `/api/openapi`).
@@ -14,17 +15,21 @@ le tableau de bord associé.
 
 ## 1. Ce qui est exposé (et ce qui ne l'est pas encore)
 
-La base contient deux périmètres (voir les migrations `V1__auth_schema.sql` et
-`V3__fleet_schema.sql`) :
+La base contient plusieurs périmètres, chacun rattaché à un module de la
+feuille de route (voir les commentaires de `V1__auth_schema.sql`) :
 
 | Périmètre | Tables | Exposé en REST ? |
 |---|---|---|
-| **Identité** (M1) | `staff_profiles`, `passengers`, `access_codes`, `login_attempts` | ❌ pas encore — géré via Keycloak / modules à venir |
-| **Flotte** (M2/M3) | `vehicles`, `vehicle_documents`, `maintenances`, `drivers` | ✅ objet de ce guide |
+| **Identité** (M1) | `passengers`, `access_codes`, `login_attempts` | ✅ §10bis |
+| `staff_profiles` (M1) | `staff_profiles` | ❌ — géré via Keycloak, jamais exposé directement |
+| **Flotte** (M2) | `vehicles`, `vehicle_documents`, `maintenances`, `drivers` | ✅ §6 à §10 |
+| **Rotations** (M3) | `rotations` | ✅ §8bis |
+| **Contrôle / Embarquement** (M4) | `attendances` + génération de `access_codes` | ✅ §8ter |
+| Paiements / abonnements (M5) | — | ❌ pas encore construit |
 
 `staff_profiles` et Keycloak restent la source de vérité pour les comptes/rôles :
-l'API ne gère ni login, ni mot de passe, ni session — uniquement les données métier
-de la flotte.
+l'API ne gère ni login, ni mot de passe, ni session pour le personnel — uniquement
+les données métier (flotte, usagers, rotations, contrôle).
 
 ---
 
@@ -411,6 +416,78 @@ apparaître dans un bloc « À surveiller » :
 `days` s'applique aux trois listes (documents, permis, entretiens) — la fenêtre
 d'alerte par défaut est aussi pilotable côté serveur via
 `transit.system.transport.alert-threshold-days` (30 jours par défaut).
+
+---
+
+## 10bis. Ressource : Identité usagers (M1)
+
+Trois ressources distinctes : usagers, codes d'accès et tentatives de
+connexion. `staff_profiles` (personnel) n'est jamais exposé — Keycloak reste
+la source de vérité pour les comptes du personnel.
+
+### Usagers (`/passengers`)
+
+| Champ | Type | Obligatoire (création) | Règles |
+|---|---|---|---|
+| `identifier` | UUID | — | généré, lecture seule |
+| `fullName` | string | oui | |
+| `phone` | string | oui | **unique** |
+| `status` | enum `PassengerStatus` | non | défaut `ACTIVE` — `ACTIVE`, `SUSPENDED`, `DISABLED` |
+
+| Méthode | Path | Rôles |
+|---|---|---|
+| GET | `/passengers?status=` | OWNER, MANAGER, CONTROLLER |
+| GET | `/passengers/{id}` | OWNER, MANAGER, CONTROLLER |
+| POST | `/passengers` | OWNER, MANAGER |
+| PUT | `/passengers/{id}` | OWNER, MANAGER |
+| PATCH | `/passengers/{id}/status` | OWNER, MANAGER |
+| DELETE | `/passengers/{id}` | OWNER |
+
+### Codes d'accès (`/access-codes`)
+
+CRUD manuel réservé à `OWNER`/`MANAGER` (création avec un code choisi à la
+main). Pour la génération automatique liée à une rotation par le rôle
+`CONTROLLER`, voir `POST /access-codes/generate` en §8ter.
+
+| Champ | Type | Obligatoire (création) | Règles |
+|---|---|---|---|
+| `identifier` | UUID | — | généré, lecture seule |
+| `vehicleIdentifier` | UUID | oui | véhicule existant |
+| `rotationIdentifier` | UUID | — | lecture seule, renseigné si le code a été généré pour une rotation (§8ter) |
+| `code` | string | oui (écriture) | jamais renvoyé en lecture — seul `POST /access-codes/generate` le renvoie en clair |
+| `validFrom` / `validUntil` | date-heure | oui | `validUntil` postérieure à `validFrom` |
+| `active` | — | lecture seule | calculé (`validFrom <= now <= validUntil`) |
+
+| Méthode | Path | Rôles |
+|---|---|---|
+| GET | `/access-codes?vehicleId=` | OWNER, MANAGER |
+| GET | `/access-codes/{id}` | OWNER, MANAGER |
+| POST | `/access-codes` | OWNER, MANAGER |
+| PUT | `/access-codes/{id}` | OWNER, MANAGER |
+| DELETE | `/access-codes/{id}` | OWNER, MANAGER |
+| POST | `/access-codes/generate` | OWNER, MANAGER, **CONTROLLER** — voir §8ter |
+
+### Tentatives de connexion (`/login-attempts`)
+
+Traçabilité générique des vérifications de code usager (succès et échecs).
+Alimentée automatiquement par `POST /boarding/verify` (§8ter) ; CRUD manuel
+disponible pour `OWNER`/`MANAGER`.
+
+| Champ | Type | Obligatoire (création) | Règles |
+|---|---|---|---|
+| `id` | number | — | entier auto-incrémenté (pas un UUID) |
+| `identifier` | string | oui | texte libre (téléphone, plaque…) |
+| `passengerIdentifier` | UUID | non | usager résolu, si trouvé |
+| `success` | boolean | oui | |
+| `ipAddress` | string | non | |
+| `attemptedAt` | date-heure | — | lecture seule |
+
+| Méthode | Path | Rôles |
+|---|---|---|
+| GET | `/login-attempts?passengerId=` | OWNER, MANAGER |
+| GET | `/login-attempts/{id}` | OWNER, MANAGER |
+| POST | `/login-attempts` | OWNER, MANAGER |
+| DELETE | `/login-attempts/{id}` | OWNER, MANAGER |
 
 ---
 
