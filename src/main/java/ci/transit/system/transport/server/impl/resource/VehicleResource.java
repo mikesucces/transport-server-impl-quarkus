@@ -8,11 +8,13 @@ import ci.transit.system.transport.server.impl.dto.DocumentDto;
 import ci.transit.system.transport.server.impl.dto.DocumentRequest;
 import ci.transit.system.transport.server.impl.dto.MaintenanceDto;
 import ci.transit.system.transport.server.impl.dto.MaintenanceRequest;
+import ci.transit.system.transport.server.impl.dto.RotationDto;
 import ci.transit.system.transport.server.impl.dto.VehicleDetailDto;
 import ci.transit.system.transport.server.impl.dto.VehicleDto;
 import ci.transit.system.transport.server.impl.dto.VehicleRequest;
 import ci.transit.system.transport.server.impl.service.DocumentService;
 import ci.transit.system.transport.server.impl.service.MaintenanceService;
+import ci.transit.system.transport.server.impl.service.RotationService;
 import ci.transit.system.transport.server.impl.service.VehicleService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -34,6 +36,9 @@ public class VehicleResource {
 
     @Inject
     MaintenanceService maintenanceService;
+
+    @Inject
+    RotationService rotationService;
 
     @GET
     @RolesAllowed({"OWNER", "MANAGER", "CONTROLLER", "DRIVER"})
@@ -120,5 +125,12 @@ public class VehicleResource {
                                       @Valid MaintenanceRequest request) {
         return Response.status(Response.Status.CREATED)
             .entity(maintenanceService.create(identifier, request)).build();
+    }
+
+    @GET
+    @Path("/{id}/rotations")
+    @RolesAllowed({"OWNER", "MANAGER"})
+    public List<RotationDto> getRotations(@PathParam("id") UUID identifier) {
+        return rotationService.findByVehicle(identifier);
     }
 }

@@ -7,7 +7,9 @@ import java.util.UUID;
 
 import ci.transit.system.transport.server.impl.dto.DriverDto;
 import ci.transit.system.transport.server.impl.dto.DriverRequest;
+import ci.transit.system.transport.server.impl.dto.RotationDto;
 import ci.transit.system.transport.server.impl.service.DriverService;
+import ci.transit.system.transport.server.impl.service.RotationService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -22,6 +24,9 @@ public class DriverResource {
 
     @Inject
     DriverService driverService;
+
+    @Inject
+    RotationService rotationService;
 
     @GET
     @RolesAllowed({"OWNER", "MANAGER"})
@@ -85,5 +90,12 @@ public class DriverResource {
     public Response deleteDriver(@PathParam("id") UUID identifier) {
         driverService.delete(identifier);
         return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/{id}/rotations")
+    @RolesAllowed({"OWNER", "MANAGER"})
+    public List<RotationDto> getDriverRotations(@PathParam("id") UUID identifier) {
+        return rotationService.findByDriver(identifier);
     }
 }

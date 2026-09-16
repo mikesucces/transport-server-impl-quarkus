@@ -227,6 +227,62 @@ changé silencieusement.
 
 ---
 
+## 8bis. Ressource : Rotations (`/rotations`)
+
+Une rotation affecte un **chauffeur** à un **véhicule** pour une vacation
+(plage horaire). C'est le module M3, prérequis pour qu'un futur module (M4)
+puisse générer des codes d'accès usagers rattachés à une vacation précise.
+
+| Champ | Type | Obligatoire (création) | Règles |
+|---|---|---|---|
+| `identifier` | UUID | — | généré, lecture seule |
+| `driverId` / `driverIdentifier` | UUID | oui (écriture) | doit référencer un chauffeur existant |
+| `vehicleId` / `vehicleIdentifier` | UUID | oui (écriture) | doit référencer un véhicule existant |
+| `status` | enum `RotationStatus` | non | défaut `PLANIFIEE` |
+| `scheduledStart` | date-heure ISO 8601 | oui | |
+| `scheduledEnd` | date-heure ISO 8601 | non | doit être postérieure à `scheduledStart` |
+| `startedAt`, `endedAt` | date-heure ISO 8601 | non | renseignées automatiquement au passage en `EN_COURS`/`TERMINEE` si absentes |
+| `startMileageKm`, `endMileageKm` | number | non | ≥ 0 |
+| `accessCodeReference` | string | non | champ libre réservé à M4, non utilisé par ce module |
+| `notes` | string | non | |
+
+`RotationStatus` : `PLANIFIEE`, `EN_COURS`, `TERMINEE`, `ANNULEE`.
+
+### Endpoints
+
+| Méthode | Path | Rôles | Description |
+|---|---|---|---|
+| GET | `/rotations?status=&driverId=&vehicleId=` | OWNER, MANAGER | liste filtrable |
+| GET | `/rotations/active` | OWNER, MANAGER | rotations en cours |
+| GET | `/rotations/{id}` | OWNER, MANAGER | détail |
+| POST | `/rotations` | OWNER, MANAGER | création |
+| PUT | `/rotations/{id}` | OWNER, MANAGER | remplacement complet |
+| PATCH | `/rotations/{id}/status` | OWNER, MANAGER | `{ "status": "EN_COURS" }` |
+| DELETE | `/rotations/{id}` | OWNER | suppression |
+| GET | `/drivers/{id}/rotations` | OWNER, MANAGER | historique par chauffeur |
+| GET | `/vehicles/{id}/rotations` | OWNER, MANAGER | historique par véhicule |
+
+### ⚠️ Effets de bord automatiques sur le chauffeur et le véhicule
+
+Comme pour les entretiens (§8), ces règles modifient d'autres objets sans
+action explicite de l'utilisateur dessus :
+
+- **Passer une rotation à `EN_COURS`** → rejetée en `400` si le chauffeur
+  n'est pas `DISPONIBLE` ou le véhicule n'est pas `DISPONIBLE`. Sinon, le
+  chauffeur bascule en `EN_ROTATION` et le véhicule en `EN_SERVICE`.
+- **Passer une rotation à `TERMINEE`** → le chauffeur et le véhicule
+  repassent à `DISPONIBLE` (s'ils étaient dans l'état actif ci-dessus), et
+  le `mileageKm` du véhicule est mis à jour si `endMileageKm` est supérieur
+  au kilométrage actuel.
+- **Passer une rotation à `ANNULEE`** → même remise à disponible, sans
+  reprise de kilométrage.
+- **Suppression bloquée** si la rotation est `EN_COURS`.
+
+➡️ Après une transition de statut de rotation, **recharger la fiche
+chauffeur et/ou véhicule** si elles sont affichées.
+
+---
+
 ## 9. Ressource : Chauffeurs (`/drivers`)
 
 | Champ | Type | Obligatoire | Règles |
