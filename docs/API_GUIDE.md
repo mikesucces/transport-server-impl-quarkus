@@ -28,6 +28,7 @@ feuille de route (voir les commentaires de `V1__auth_schema.sql`) :
 | **Contrôle / Embarquement** (M4) | `attendances` + génération de `access_codes` | ✅ §8ter |
 | **Abonnements / Paiements** (M5) | `subscriptions`, `payments` | ✅ §10ter |
 | **Lignes** (M6) | `routes`, `route_schedules` | ✅ §8quater |
+| **Tableau de bord global** (M7) | — (agrégation, pas de nouvelle table) | ✅ §8quinquies |
 
 `staff_profiles` et Keycloak restent la source de vérité pour les comptes/rôles :
 l'API ne gère ni login, ni mot de passe, ni session pour le personnel — uniquement
@@ -420,6 +421,39 @@ horaires récurrents, auquel une rotation peut être rattachée
 | POST | `/routes/{id}/schedules` | OWNER, MANAGER |
 | PUT | `/route-schedules/{id}` | OWNER, MANAGER |
 | DELETE | `/route-schedules/{id}` | OWNER, MANAGER |
+
+---
+
+## 8quinquies. Tableau de bord global (`/dashboard`)
+
+Module M7 : agrège en un seul appel ce que `/fleet/alerts` (§10) couvrait
+déjà (flotte) **et** ce que les modules ajoutés depuis ont apporté
+(rotations, abonnements, revenus). Aucune nouvelle table — lecture pure sur
+les données existantes.
+
+`GET /dashboard?days=30` (rôles `OWNER`, `MANAGER`) :
+
+```json
+{
+  "fleetAlerts": { "...": "FleetAlertsDto, identique a /fleet/alerts" },
+  "expiringSubscriptions": [ "...SubscriptionDto" ],
+  "todayRotations": [ "...RotationDto" ],
+  "activeRotationsCount": 1,
+  "activeSubscriptionsCount": 3,
+  "monthlyRevenue": 45000.00
+}
+```
+
+- `fleetAlerts` : identique à la réponse de `GET /fleet/alerts?days=` (même
+  paramètre `days`, même contenu — voir §10).
+- `expiringSubscriptions` : abonnements `ACTIVE` dont `endsOn` tombe dans les
+  `days` prochains jours.
+- `todayRotations` : rotations dont `scheduledStart` tombe dans la journée
+  calendaire courante (fuseau du serveur).
+- `activeRotationsCount` : nombre de rotations `EN_COURS` en ce moment.
+- `activeSubscriptionsCount` : nombre total d'abonnements `ACTIVE`.
+- `monthlyRevenue` : somme des paiements encaissés depuis le 1er du mois
+  civil en cours (FCFA).
 
 ---
 

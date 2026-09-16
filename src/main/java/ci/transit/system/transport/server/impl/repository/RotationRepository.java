@@ -1,5 +1,6 @@
 package ci.transit.system.transport.server.impl.repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,6 +49,14 @@ public class RotationRepository {
             "SELECT r FROM Rotation r WHERE r.route.uuid = :route ORDER BY r.scheduledStart DESC",
             Rotation.class
         ).setParameter("route", routeIdentifier).getResultList();
+    }
+
+    /** Rotations dont le debut planifie tombe dans la fenetre donnee (ex. la journee courante). */
+    public List<Rotation> findScheduledBetween(Instant start, Instant end) {
+        return entityManager.createQuery(
+            "SELECT r FROM Rotation r WHERE r.scheduledStart >= :start AND r.scheduledStart < :end "
+          + "ORDER BY r.scheduledStart", Rotation.class
+        ).setParameter("start", start).setParameter("end", end).getResultList();
     }
 
     public List<Rotation> findActive() {

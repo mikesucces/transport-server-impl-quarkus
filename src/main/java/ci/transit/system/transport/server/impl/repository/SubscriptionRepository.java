@@ -56,6 +56,22 @@ public class SubscriptionRepository {
         }
     }
 
+    /** Abonnements actifs qui expirent avant la date limite. */
+    public List<Subscription> findExpiringBefore(LocalDate limit) {
+        return entityManager.createQuery(
+            "SELECT s FROM Subscription s WHERE s.status = :status AND s.endsOn <= :limit "
+          + "ORDER BY s.endsOn", Subscription.class
+        ).setParameter("status", SubscriptionStatus.ACTIVE)
+         .setParameter("limit", limit)
+         .getResultList();
+    }
+
+    public long countByStatus(SubscriptionStatus status) {
+        return entityManager.createQuery(
+            "SELECT COUNT(s) FROM Subscription s WHERE s.status = :status", Long.class
+        ).setParameter("status", status).getSingleResult();
+    }
+
     public Subscription findById(UUID identifier) {
         return entityManager.find(Subscription.class, identifier);
     }

@@ -1,5 +1,7 @@
 package ci.transit.system.transport.server.impl.repository;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +28,14 @@ public class PaymentRepository {
             "SELECT p FROM Payment p WHERE p.subscription.uuid = :subscription ORDER BY p.paidAt DESC",
             Payment.class
         ).setParameter("subscription", subscriptionIdentifier).getResultList();
+    }
+
+    /** Somme des encaissements depuis une date donnee (ex. debut du mois). */
+    public BigDecimal sumAmountSince(Instant since) {
+        BigDecimal total = entityManager.createQuery(
+            "SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.paidAt >= :since", BigDecimal.class
+        ).setParameter("since", since).getSingleResult();
+        return total == null ? BigDecimal.ZERO : total;
     }
 
     public Payment findById(UUID identifier) {
