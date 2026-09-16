@@ -4,7 +4,8 @@ Ce document décrit l'API REST exposée par `transport-server-impl-quarkus` pour
 développement du front. Il couvre ce qui est **réellement implémenté** aujourd'hui :
 le référentiel flotte (véhicules, documents, entretiens, chauffeurs) et son tableau
 de bord, les usagers et leurs codes d'accès, les rotations (affectation chauffeur/
-véhicule) et le contrôle/embarquement (génération de code + vérification).
+véhicule), le contrôle/embarquement (génération de code + vérification) et les
+abonnements/paiements usagers.
 
 > Pour explorer l'API de façon interactive : **Swagger UI** sur
 > `http://localhost:8080/api/swagger-ui` (spec OpenAPI brute sur `/api/openapi`).
@@ -25,7 +26,7 @@ feuille de route (voir les commentaires de `V1__auth_schema.sql`) :
 | **Flotte** (M2) | `vehicles`, `vehicle_documents`, `maintenances`, `drivers` | ✅ §6 à §10 |
 | **Rotations** (M3) | `rotations` | ✅ §8bis |
 | **Contrôle / Embarquement** (M4) | `attendances` + génération de `access_codes` | ✅ §8ter |
-| Paiements / abonnements (M5) | — | ❌ pas encore construit |
+| **Abonnements / Paiements** (M5) | `subscriptions`, `payments` | ✅ §10ter |
 
 `staff_profiles` et Keycloak restent la source de vérité pour les comptes/rôles :
 l'API ne gère ni login, ni mot de passe, ni session pour le personnel — uniquement
@@ -351,6 +352,11 @@ En cas de succès, `attendance` contient la présence créée. Dans tous les cas
 un `login_attempt` est enregistré (traçabilité générique, y compris les
 échecs) ; **`attendance` n'est créée que si la vérification réussit.**
 
+⚠️ **Depuis M5** : la vérification exige aussi que l'usager ait un
+**abonnement actif** couvrant la date du jour (voir §10ter). Sans abonnement
+actif, `success:false` avec le message `"Abonnement expire ou inexistant"`,
+même si le code est correct.
+
 ### Historique des présences
 
 | Méthode | Path | Rôles | Description |
@@ -488,6 +494,92 @@ disponible pour `OWNER`/`MANAGER`.
 | GET | `/login-attempts/{id}` | OWNER, MANAGER |
 | POST | `/login-attempts` | OWNER, MANAGER |
 | DELETE | `/login-attempts/{id}` | OWNER, MANAGER |
+
+---
+
+## 10ter. Abonnements & Paiements (M5)
+
+Un usager doit avoir un **abonnement actif** (couvrant la date du jour) pour
+qu'un embarquement soit validé (§8ter). Un **paiement** ne s'enregistre
+jamais seul : il finance toujours la création (`POST /subscriptions`) ou le
+renouvellement (`POST /subscriptions/{id}/renew`) d'un abonnement — il n'y a
+pas d'endpoint `POST /payments` autonome.
+
+### Abonnements (`/subscriptions`)
+
+| Champ | Type | Obligatoire (création) | Règles |
+|---|---|---|---|
+| `identifier` | UUID | — | généré, lecture seule |
+| `passengerIdentifier` | UUID | oui (`passengerId` en écriture) | usager existant |
+| `plan` | enum `SubscriptionPlan` | oui | `HEBDOMADAIRE` (7j), `MENSUEL` (30j), `TRIMESTRIEL` (90j) |
+| `status` | enum `SubscriptionStatus` | — | `ACTIVE` (défaut à la création), `EXPIRED`, `CANCELLED` |
+| `startsOn` / `endsOn` | date | — | calculées côté serveur à partir de `plan` |
+| `daysRemaining` | — | lecture seule | jours restants avant `endsOn` (peut être négatif) |
+
+`GET /subscriptions/{id}` renvoie un objet enrichi (`SubscriptionDetailDto`) :
+```json
+{
+  "subscription": { "...": "SubscriptionDto" },
+  "payments": [ "...PaymentDto" ]
+}
+```
+
+#### Souscription initiale — `POST /subscriptions`
+
+Rôles : `OWNER`, `MANAGER`, `CONTROLLER` (encaissement possible sur le
+terrain, même logique que la génération de code en M4).
+
+| Champ (requête) | Type | Obligatoire | Règles |
+|---|---|---|---|
+| `passengerId` | UUID | oui | |
+| `plan` | string | oui | |
+| `amount` | number | oui | `≥ 0`, montant du premier paiement (FCFA) |
+| `method` | enum `PaymentMethod` | oui | `ESPECES`, `MOBILE_MONEY`, `VIREMENT`, `AUTRE` |
+| `collectedBy` | UUID | non | champ libre, non validé contre une table |
+
+Crée l'abonnement (`startsOn = aujourd'hui`, `endsOn = aujourd'hui + durée du
+plan`, `status = ACTIVE`) **et** le paiement associé en une seule opération.
+
+#### Renouvellement — `POST /subscriptions/{id}/renew`
+
+Mêmes rôles et mêmes champs que la souscription (`plan` optionnel — reconduit
+la formule actuelle si absent), sans `passengerId`.
+
+- Renouveler **avant** l'expiration prolonge `endsOn` à partir de la date de
+  fin actuelle (pas de jours perdus).
+- Renouveler **après** l'expiration repart de la date du jour et remet
+  `status` à `ACTIVE`.
+
+#### Autres endpoints
+
+| Méthode | Path | Rôles | Description |
+|---|---|---|---|
+| GET | `/subscriptions?passengerId=&status=` | OWNER, MANAGER, CONTROLLER | liste filtrable |
+| GET | `/subscriptions/{id}` | OWNER, MANAGER, CONTROLLER | détail + paiements |
+| PATCH | `/subscriptions/{id}/status` | OWNER, MANAGER | override manuel (ex. `CANCELLED`) |
+| DELETE | `/subscriptions/{id}` | OWNER | bloqué si `status == ACTIVE` |
+| GET | `/passengers/{id}/subscriptions` | OWNER, MANAGER, CONTROLLER | historique par usager |
+
+### Paiements (`/payments`) — lecture seule
+
+Le ledger complet des encaissements ; écriture uniquement via
+`/subscriptions` (souscription ou renouvellement) ci-dessus.
+
+| Champ | Type | Règles |
+|---|---|---|
+| `identifier` | UUID | généré |
+| `subscriptionIdentifier` | UUID | |
+| `passengerIdentifier` / `passengerFullName` | — | résolus via l'abonnement |
+| `amount` | number | FCFA |
+| `method` | enum `PaymentMethod` | |
+| `collectedBy` | UUID | champ libre, peut être `null` |
+| `paidAt` | date-heure | |
+
+| Méthode | Path | Rôles |
+|---|---|---|
+| GET | `/payments?subscriptionId=` | OWNER, MANAGER |
+| GET | `/payments/{id}` | OWNER, MANAGER |
+| DELETE | `/payments/{id}` | OWNER (correction d'audit) |
 
 ---
 

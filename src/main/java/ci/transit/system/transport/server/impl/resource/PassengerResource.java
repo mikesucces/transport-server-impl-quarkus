@@ -6,7 +6,9 @@ import java.util.UUID;
 
 import ci.transit.system.transport.server.impl.dto.PassengerDto;
 import ci.transit.system.transport.server.impl.dto.PassengerRequest;
+import ci.transit.system.transport.server.impl.dto.SubscriptionDto;
 import ci.transit.system.transport.server.impl.service.PassengerService;
+import ci.transit.system.transport.server.impl.service.SubscriptionService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -21,6 +23,9 @@ public class PassengerResource {
 
     @Inject
     PassengerService passengerService;
+
+    @Inject
+    SubscriptionService subscriptionService;
 
     @GET
     @RolesAllowed({"OWNER", "MANAGER", "CONTROLLER"})
@@ -62,5 +67,12 @@ public class PassengerResource {
     public Response deletePassenger(@PathParam("id") UUID identifier) {
         passengerService.delete(identifier);
         return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/{id}/subscriptions")
+    @RolesAllowed({"OWNER", "MANAGER", "CONTROLLER"})
+    public List<SubscriptionDto> getPassengerSubscriptions(@PathParam("id") UUID identifier) {
+        return subscriptionService.findByPassenger(identifier);
     }
 }

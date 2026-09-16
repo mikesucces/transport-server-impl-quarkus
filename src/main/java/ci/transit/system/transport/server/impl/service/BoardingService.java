@@ -1,5 +1,6 @@
 package ci.transit.system.transport.server.impl.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +17,7 @@ import ci.transit.system.transport.server.impl.repository.AttendanceRepository;
 import ci.transit.system.transport.server.impl.repository.LoginAttemptRepository;
 import ci.transit.system.transport.server.impl.repository.PassengerRepository;
 import ci.transit.system.transport.server.impl.repository.RotationRepository;
+import ci.transit.system.transport.server.impl.repository.SubscriptionRepository;
 import ci.transit.system.transport.server.impl.utilities.ApiException;
 import ci.transit.system.transport.server.impl.utilities.AttendanceMapper;
 import ci.transit.system.transport.server.impl.utilities.CodeHasher;
@@ -47,6 +49,9 @@ public class BoardingService {
     @Inject
     AttendanceRepository attendanceRepository;
 
+    @Inject
+    SubscriptionRepository subscriptionRepository;
+
     public BoardingResultDto verify(BoardingVerifyRequest request) {
         Rotation rotation = rotationRepository.findById(request.rotationId);
         if (rotation == null) {
@@ -57,7 +62,9 @@ public class BoardingService {
         AccessCode matchedCode = findMatchingActiveCode(rotation, submittedHash);
         Optional<Passenger> passenger = passengerRepository.findByPhone(request.phone.trim());
         boolean passengerActive = passenger.isPresent() && passenger.get().getStatus() == PassengerStatus.ACTIVE;
-        boolean success = matchedCode != null && passengerActive;
+        boolean hasActiveSubscription = passenger.isPresent()
+            && subscriptionRepository.findActiveForPassenger(passenger.get().getUuid(), LocalDate.now()).isPresent();
+        boolean success = matchedCode != null && passengerActive && hasActiveSubscription;
 
         LoginAttempt attempt = new LoginAttempt();
         attempt.setIdentifier(request.phone.trim());
@@ -70,9 +77,13 @@ public class BoardingService {
 
         if (!success) {
             result.success = false;
-            result.message = matchedCode == null
-                ? "Code invalide ou expire"
-                : "Usager introuvable ou non actif";
+            if (matchedCode == null) {
+                result.message = "Code invalide ou expire";
+            } else if (!passengerActive) {
+                result.message = "Usager introuvable ou non actif";
+            } else {
+                result.message = "Abonnement expire ou inexistant";
+            }
             return result;
         }
 
