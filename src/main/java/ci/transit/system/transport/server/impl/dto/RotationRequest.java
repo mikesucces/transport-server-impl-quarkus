@@ -20,6 +20,9 @@ public class RotationRequest {
   @NotNull(message = "Le vehicule est obligatoire")
   public UUID vehicleId;
 
+  /** Ligne optionnelle a laquelle rattacher la rotation. */
+  public UUID routeId;
+
   public String status;
 
   @NotNull(message = "Le debut planifie est obligatoire")

@@ -6,6 +6,7 @@ import ci.transit.system.transport.server.impl.ennumerations.RotationStatus;
 import ci.transit.system.transport.server.impl.persistence.BaseEntity;
 import ci.transit.system.transport.server.impl.persistence.fleet.Driver;
 import ci.transit.system.transport.server.impl.persistence.fleet.Vehicle;
+import ci.transit.system.transport.server.impl.persistence.route.Route;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -36,6 +37,10 @@ public class Rotation extends BaseEntity {
     @ManyToOne(optional = false)
     @JoinColumn(name = "vehicle_id")
     private Vehicle vehicle;
+
+    @ManyToOne
+    @JoinColumn(name = "route_id")
+    private Route route;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

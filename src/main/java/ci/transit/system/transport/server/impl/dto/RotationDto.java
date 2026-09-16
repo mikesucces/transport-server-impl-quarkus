@@ -15,6 +15,9 @@ public class RotationDto {
   public String driverFullName;
   public UUID vehicleIdentifier;
   public String plateNumber;
+  public UUID routeIdentifier;
+  public String routeCode;
+  public String routeName;
   public String status;
   public Instant scheduledStart;
   public Instant scheduledEnd;

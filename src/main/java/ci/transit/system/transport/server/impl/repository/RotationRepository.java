@@ -43,6 +43,13 @@ public class RotationRepository {
         ).setParameter("vehicle", vehicleIdentifier).getResultList();
     }
 
+    public List<Rotation> findByRoute(UUID routeIdentifier) {
+        return entityManager.createQuery(
+            "SELECT r FROM Rotation r WHERE r.route.uuid = :route ORDER BY r.scheduledStart DESC",
+            Rotation.class
+        ).setParameter("route", routeIdentifier).getResultList();
+    }
+
     public List<Rotation> findActive() {
         return entityManager.createQuery(
             "SELECT r FROM Rotation r WHERE r.status = :status ORDER BY r.scheduledStart", Rotation.class

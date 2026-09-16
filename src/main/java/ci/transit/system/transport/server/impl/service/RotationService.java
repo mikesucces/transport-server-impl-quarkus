@@ -13,8 +13,10 @@ import ci.transit.system.transport.server.impl.ennumerations.VehicleStatus;
 import ci.transit.system.transport.server.impl.persistence.fleet.Driver;
 import ci.transit.system.transport.server.impl.persistence.fleet.Vehicle;
 import ci.transit.system.transport.server.impl.persistence.rotation.Rotation;
+import ci.transit.system.transport.server.impl.persistence.route.Route;
 import ci.transit.system.transport.server.impl.repository.DriverRepository;
 import ci.transit.system.transport.server.impl.repository.RotationRepository;
+import ci.transit.system.transport.server.impl.repository.RouteRepository;
 import ci.transit.system.transport.server.impl.repository.VehicleRepository;
 import ci.transit.system.transport.server.impl.utilities.ApiException;
 import ci.transit.system.transport.server.impl.utilities.RotationMapper;
@@ -32,6 +34,9 @@ public class RotationService {
 
     @Inject
     VehicleRepository vehicleRepository;
+
+    @Inject
+    RouteRepository routeRepository;
 
     public List<RotationDto> findAll(String status, UUID driverId, UUID vehicleId) {
         List<Rotation> rotations;
@@ -181,6 +186,7 @@ public class RotationService {
         if (request.status != null && !request.status.isBlank()) {
             rotation.setStatus(parseStatus(request.status));
         }
+        rotation.setRoute(request.routeId != null ? requireRoute(request.routeId) : null);
         rotation.setScheduledStart(request.scheduledStart);
         rotation.setScheduledEnd(request.scheduledEnd);
         rotation.setStartedAt(request.startedAt);
@@ -221,5 +227,13 @@ public class RotationService {
             throw ApiException.notFound("Vehicule introuvable");
         }
         return vehicle;
+    }
+
+    private Route requireRoute(UUID identifier) {
+        Route route = routeRepository.findById(identifier);
+        if (route == null) {
+            throw ApiException.notFound("Ligne introuvable");
+        }
+        return route;
     }
 }

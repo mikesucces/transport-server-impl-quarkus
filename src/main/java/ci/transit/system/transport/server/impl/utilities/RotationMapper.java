@@ -21,6 +21,11 @@ public final class RotationMapper {
         dto.driverFullName = entity.getDriver().getFullName();
         dto.vehicleIdentifier = entity.getVehicle().getUuid();
         dto.plateNumber = entity.getVehicle().getPlateNumber();
+        if (entity.getRoute() != null) {
+            dto.routeIdentifier = entity.getRoute().getUuid();
+            dto.routeCode = entity.getRoute().getCode();
+            dto.routeName = entity.getRoute().getName();
+        }
         dto.status = entity.getStatus().name();
         dto.scheduledStart = entity.getScheduledStart();
         dto.scheduledEnd = entity.getScheduledEnd();

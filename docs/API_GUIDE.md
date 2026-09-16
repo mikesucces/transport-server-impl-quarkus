@@ -4,8 +4,8 @@ Ce document décrit l'API REST exposée par `transport-server-impl-quarkus` pour
 développement du front. Il couvre ce qui est **réellement implémenté** aujourd'hui :
 le référentiel flotte (véhicules, documents, entretiens, chauffeurs) et son tableau
 de bord, les usagers et leurs codes d'accès, les rotations (affectation chauffeur/
-véhicule), le contrôle/embarquement (génération de code + vérification) et les
-abonnements/paiements usagers.
+véhicule) et leur rattachement optionnel à une ligne fixe, le contrôle/embarquement
+(génération de code + vérification) et les abonnements/paiements usagers.
 
 > Pour explorer l'API de façon interactive : **Swagger UI** sur
 > `http://localhost:8080/api/swagger-ui` (spec OpenAPI brute sur `/api/openapi`).
@@ -27,6 +27,7 @@ feuille de route (voir les commentaires de `V1__auth_schema.sql`) :
 | **Rotations** (M3) | `rotations` | ✅ §8bis |
 | **Contrôle / Embarquement** (M4) | `attendances` + génération de `access_codes` | ✅ §8ter |
 | **Abonnements / Paiements** (M5) | `subscriptions`, `payments` | ✅ §10ter |
+| **Lignes** (M6) | `routes`, `route_schedules` | ✅ §8quater |
 
 `staff_profiles` et Keycloak restent la source de vérité pour les comptes/rôles :
 l'API ne gère ni login, ni mot de passe, ni session pour le personnel — uniquement
@@ -244,6 +245,7 @@ puisse générer des codes d'accès usagers rattachés à une vacation précise.
 | `identifier` | UUID | — | généré, lecture seule |
 | `driverId` / `driverIdentifier` | UUID | oui (écriture) | doit référencer un chauffeur existant |
 | `vehicleId` / `vehicleIdentifier` | UUID | oui (écriture) | doit référencer un véhicule existant |
+| `routeId` / `routeIdentifier` | UUID | non | ligne fixe optionnelle (M6, §8quater) — absent/`null` = rotation libre sans ligne |
 | `status` | enum `RotationStatus` | non | défaut `PLANIFIEE` |
 | `scheduledStart` | date-heure ISO 8601 | oui | |
 | `scheduledEnd` | date-heure ISO 8601 | non | doit être postérieure à `scheduledStart` |
@@ -365,6 +367,59 @@ même si le code est correct.
 | GET | `/attendances/{id}` | OWNER, MANAGER | détail |
 | DELETE | `/attendances/{id}` | OWNER | correction d'audit |
 | GET | `/rotations/{id}/attendances` | OWNER, MANAGER | historique par rotation |
+
+---
+
+## 8quater. Ressource : Lignes (`/routes`)
+
+Module M6 : une ligne est un trajet fixe (point A → point B) avec des
+horaires récurrents, auquel une rotation peut être rattachée
+(`Rotation.routeId`, optionnel — voir §8bis).
+
+### Champs (`RouteDto`)
+
+| Champ | Type | Obligatoire (création) | Règles |
+|---|---|---|---|
+| `identifier` | UUID | — | généré, lecture seule |
+| `code` | string | oui | **unique**, normalisé en majuscules |
+| `name` | string | oui | |
+| `origin` / `destination` | string | oui | |
+| `distanceKm` | number | non | ≥ 0 |
+| `status` | enum `RouteStatus` | non | défaut `ACTIVE` — `ACTIVE`, `SUSPENDUE` |
+
+`GET /routes/{id}` renvoie un objet enrichi (`RouteDetailDto`) :
+```json
+{
+  "route": { "...": "RouteDto" },
+  "schedules": [ "...RouteScheduleDto" ]
+}
+```
+
+### Endpoints
+
+| Méthode | Path | Rôles | Description |
+|---|---|---|---|
+| GET | `/routes?status=` | OWNER, MANAGER, CONTROLLER, DRIVER | liste filtrable |
+| GET | `/routes/{id}` | OWNER, MANAGER, CONTROLLER, DRIVER | détail + horaires |
+| POST | `/routes` | OWNER, MANAGER | création |
+| PUT | `/routes/{id}` | OWNER, MANAGER | remplacement complet |
+| PATCH | `/routes/{id}/status` | OWNER, MANAGER | `{ "status": "SUSPENDUE" }` |
+| DELETE | `/routes/{id}` | OWNER | bloqué si des rotations référencent la ligne |
+| GET | `/routes/{id}/rotations` | OWNER, MANAGER | historique des rotations sur cette ligne |
+
+### Horaires récurrents (`RouteScheduleDto`)
+
+| Champ | Type | Obligatoire | Règles |
+|---|---|---|---|
+| `dayOfWeek` | enum `ScheduleDay` | oui | `LUNDI`…`DIMANCHE` |
+| `departureTime` | heure (`HH:mm`) | oui | pas de date précise — planning type récurrent |
+
+| Méthode | Path | Rôles |
+|---|---|---|
+| GET | `/routes/{id}/schedules` | OWNER, MANAGER |
+| POST | `/routes/{id}/schedules` | OWNER, MANAGER |
+| PUT | `/route-schedules/{id}` | OWNER, MANAGER |
+| DELETE | `/route-schedules/{id}` | OWNER, MANAGER |
 
 ---
 
