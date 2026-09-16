@@ -22,7 +22,7 @@ feuille de route (voir les commentaires de `V1__auth_schema.sql`) :
 | Périmètre | Tables | Exposé en REST ? |
 |---|---|---|
 | **Identité** (M1) | `passengers`, `access_codes`, `login_attempts` | ✅ §10bis |
-| `staff_profiles` (M1) | `staff_profiles` | ❌ — géré via Keycloak, jamais exposé directement |
+| **Personnel** (M8, table M1) | `staff_profiles` | ✅ §10quater — Keycloak reste seul maître des identifiants |
 | **Flotte** (M2) | `vehicles`, `vehicle_documents`, `maintenances`, `drivers` | ✅ §6 à §10 |
 | **Rotations** (M3) | `rotations` | ✅ §8bis |
 | **Contrôle / Embarquement** (M4) | `attendances` + génération de `access_codes` | ✅ §8ter |
@@ -473,10 +473,11 @@ les données existantes.
 | `commissionRate` | number | conditionnel | requis si `remunerationType = COMMISSION`, ≤ 100 |
 | `status` | enum `DriverStatus` | non | défaut `DISPONIBLE` |
 | `hiredOn` | date | non | |
+| `staffProfileId` | UUID | non | rattache le chauffeur à un profil personnel (M8, §10quater) — doit référencer un profil existant |
 
 Champs en lecture seule dans `DriverDto` : `daysUntilLicenseExpiry` (calculé),
 `hasAccount` (booléen — `true` si le chauffeur est relié à un compte
-Keycloak/`staff_profiles`, sinon chauffeur "hors-système").
+Keycloak/`staff_profiles` via `staffProfileId`, sinon chauffeur "hors-système").
 
 ### Règles métier
 
@@ -669,6 +670,53 @@ Le ledger complet des encaissements ; écriture uniquement via
 | GET | `/payments?subscriptionId=` | OWNER, MANAGER |
 | GET | `/payments/{id}` | OWNER, MANAGER |
 | DELETE | `/payments/{id}` | OWNER (correction d'audit) |
+
+---
+
+## 10quater. Ressource : Personnel (`/staff-profiles`)
+
+Module M8 : `staff_profiles` (table existante depuis M1) est le **miroir
+métier** des comptes du personnel — Keycloak reste l'unique source de
+vérité pour les identifiants/mots de passe/rôles réellement appliqués par
+`@RolesAllowed`. Cette ressource ne gère ni authentification ni session.
+
+| Champ | Type | Obligatoire (création) | Règles |
+|---|---|---|---|
+| `identifier` | UUID | — | généré, lecture seule |
+| `keycloakSub` | UUID | oui | claim `sub` du compte Keycloak, **unique**, à copier manuellement depuis la console Keycloak — non validé par l'API (aucune intégration JWT) |
+| `username` | string | oui | |
+| `fullName` | string | oui | |
+| `phone` / `email` | string | non | |
+| `staffType` | enum `StaffType` | oui | `OWNER`, `MANAGER`, `CONTROLLER`, `DRIVER` — informatif côté API, ne modifie pas les rôles réels du token Keycloak |
+| `matricule` | string | non | **unique** si renseigné |
+| `active` | boolean | non | défaut `true` |
+| `firstSeenAt` | date-heure | — | lecture seule, figée à la création |
+| `lastLoginAt` | date-heure | — | lecture seule, jamais alimentée aujourd'hui (aucune intégration Keycloak) |
+
+### Endpoints
+
+| Méthode | Path | Rôles | Description |
+|---|---|---|---|
+| GET | `/staff-profiles?staffType=` | OWNER, MANAGER | liste filtrable |
+| GET | `/staff-profiles/{id}` | OWNER, MANAGER | détail |
+| POST | `/staff-profiles` | **OWNER seul** | création |
+| PUT | `/staff-profiles/{id}` | **OWNER seul** | remplacement complet |
+| PATCH | `/staff-profiles/{id}/active` | **OWNER seul** | `{ "active": "false" }` |
+| DELETE | `/staff-profiles/{id}` | **OWNER seul** | bloqué si un chauffeur y est rattaché |
+
+⚠️ Écriture réservée à `OWNER` uniquement (plus restrictif que `/drivers`,
+`OWNER`+`MANAGER`) : `staffType` reflète qui a accès à quoi dans
+l'organisation, donnée plus sensible que la gestion opérationnelle des
+chauffeurs.
+
+### Rattachement à un chauffeur
+
+`Driver.staffProfileId` (voir §9) relie un chauffeur à un profil personnel
+existant. La FK est posée en base depuis M2 mais n'était jusqu'ici
+atteignable par aucun champ de `DriverRequest` — c'est désormais possible
+via `PUT /drivers/{id}` (ou `POST /drivers`). Un profil rattaché à un
+chauffeur ne peut pas être supprimé (`DELETE /staff-profiles/{id}` renvoie
+`400`) tant que le chauffeur n'est pas détaché ou supprimé.
 
 ---
 

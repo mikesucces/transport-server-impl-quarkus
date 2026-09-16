@@ -55,6 +55,16 @@ public class DriverRepository {
         }
     }
 
+    public Optional<Driver> findByStaffProfile(UUID staffProfileIdentifier) {
+        try {
+            return Optional.of(entityManager.createQuery(
+                "SELECT d FROM Driver d WHERE d.staffProfileIdentifier = :staffProfile", Driver.class
+            ).setParameter("staffProfile", staffProfileIdentifier).getSingleResult());
+        } catch (NoResultException e) {
+            return Optional.empty();
+        }
+    }
+
     /** Masse salariale mensuelle des chauffeurs remuneres au fixe. */
     public BigDecimal sumMonthlySalary() {
         BigDecimal total = entityManager.createQuery(

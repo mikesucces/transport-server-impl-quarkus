@@ -2,6 +2,7 @@ package ci.transit.system.transport.server.impl.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.NotBlank;
@@ -23,6 +24,9 @@ public class DriverRequest {
   public String phone;
 
   public String matricule;
+
+  /** Profil personnel (compte Keycloak) a rattacher, optionnel. */
+  public UUID staffProfileId;
 
   @NotBlank(message = "Le numero de permis est obligatoire")
   public String licenseNumber;

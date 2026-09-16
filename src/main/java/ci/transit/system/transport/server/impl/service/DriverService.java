@@ -13,6 +13,7 @@ import ci.transit.system.transport.server.impl.ennumerations.DriverStatus;
 import ci.transit.system.transport.server.impl.ennumerations.RemunerationType;
 import ci.transit.system.transport.server.impl.persistence.fleet.Driver;
 import ci.transit.system.transport.server.impl.repository.DriverRepository;
+import ci.transit.system.transport.server.impl.repository.StaffProfileRepository;
 import ci.transit.system.transport.server.impl.utilities.ApiException;
 import ci.transit.system.transport.server.impl.utilities.FleetMapper;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,6 +24,9 @@ public class DriverService {
 
     @Inject
     DriverRepository driverRepository;
+
+    @Inject
+    StaffProfileRepository staffProfileRepository;
 
     public List<DriverDto> findAll(String status) {
         List<Driver> drivers = (status == null || status.isBlank())
@@ -97,6 +101,10 @@ public class DriverService {
         driver.setFullName(request.fullName.trim());
         driver.setPhone(request.phone.trim());
         driver.setMatricule(request.matricule);
+        if (request.staffProfileId != null && staffProfileRepository.findById(request.staffProfileId) == null) {
+            throw ApiException.notFound("Profil personnel introuvable");
+        }
+        driver.setStaffProfileIdentifier(request.staffProfileId);
         driver.setLicenseNumber(request.licenseNumber.trim());
         if (request.licenseCategory != null && !request.licenseCategory.isBlank()) {
             driver.setLicenseCategory(request.licenseCategory.trim().toUpperCase());
