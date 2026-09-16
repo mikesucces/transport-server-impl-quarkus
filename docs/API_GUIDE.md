@@ -30,6 +30,7 @@ feuille de route (voir les commentaires de `V1__auth_schema.sql`) :
 | **Lignes** (M6) | `routes`, `route_schedules` | ✅ §8quater |
 | **Tableau de bord global** (M7) | — (agrégation, pas de nouvelle table) | ✅ §8quinquies |
 | **Moyens de paiement** (M9) | `payment_accounts` | ✅ §10quinquies |
+| **Location de véhicules** (M10) | `rentals`, `rental_payments` | ✅ §8sexies |
 
 `staff_profiles` et Keycloak restent la source de vérité pour les comptes/rôles :
 l'API ne gère ni login, ni mot de passe, ni session pour le personnel — uniquement
@@ -136,6 +137,7 @@ requêtes.
 | `RotationStatus` (rotations, M3) | `PLANIFIEE`, `EN_COURS`, `TERMINEE`, `ANNULEE` |
 | `PassengerStatus` (usagers, M1) | `ACTIVE`, `SUSPENDED`, `DISABLED` |
 | `PaymentMethod` (paiements, M5) | `ESPECES`, `MOBILE_MONEY`, `VIREMENT`, `AUTRE` |
+| `RentalStatus` (locations, M10) | `RESERVEE`, `EN_COURS`, `TERMINEE`, `ANNULEE` |
 | `SubscriptionPlan` (abonnements, M5) | `HEBDOMADAIRE`, `MENSUEL`, `TRIMESTRIEL` |
 | `SubscriptionStatus` (abonnements, M5) | `ACTIVE`, `EXPIRED`, `CANCELLED` |
 | `RouteStatus` (lignes, M6) | `ACTIVE`, `SUSPENDUE` |
@@ -470,6 +472,85 @@ les données existantes.
 - `activeSubscriptionsCount` : nombre total d'abonnements `ACTIVE`.
 - `monthlyRevenue` : somme des paiements encaissés depuis le 1er du mois
   civil en cours (FCFA).
+
+---
+
+## 8sexies. Ressource : Location de véhicules (`/rentals`)
+
+Module M10 : loue un véhicule à un usager (`Passenger`) pour une période
+donnée, **indépendamment** du système abonnement/rotation. Comme
+`EN_SERVICE` est le statut générique « véhicule occupé » (déjà utilisé par
+les rotations), un véhicule loué (`EN_COURS`) ne peut pas être affecté à une
+rotation en même temps, et inversement — aucune règle de conflit
+supplémentaire n'est nécessaire.
+
+Rôles : `OWNER`, `MANAGER` pour tout (`GET`/`POST`/`PUT`/`PATCH`/paiements) ;
+`DELETE` réservé à `OWNER`. Pas d'accès `CONTROLLER` (activité distincte du
+contrôle d'embarquement de M4).
+
+### Champs (`RentalDto`)
+
+| Champ | Type | Obligatoire (création) | Règles |
+|---|---|---|---|
+| `identifier` | UUID | — | généré, lecture seule |
+| `passengerId` / `passengerIdentifier` | UUID | oui (écriture) | usager existant |
+| `vehicleId` / `vehicleIdentifier` | UUID | oui (écriture) | véhicule existant |
+| `status` | enum `RentalStatus` | non | défaut `RESERVEE` |
+| `startDate` / `endDate` | date | oui | `endDate ≥ startDate` |
+| `actualReturnDate` | date | non | renseignée automatiquement au passage en `TERMINEE` si absente |
+| `startMileageKm` / `endMileageKm` | number | non | ≥ 0 |
+| `totalAmount` | number | oui | **saisi manuellement** (FCFA) — pas de calcul tarif × durée |
+| `depositAmount` | number | non | caution (FCFA) |
+| `notes` | string | non | |
+
+`GET /rentals/{id}` renvoie un objet enrichi (`RentalDetailDto`) :
+```json
+{
+  "rental": { "...": "RentalDto" },
+  "payments": [ "...RentalPaymentDto" ]
+}
+```
+
+### ⚠️ Effets de bord automatiques sur le véhicule
+
+Même patron que les rotations (§8bis) :
+
+- **Passer une location à `EN_COURS`** → rejetée en `400` si le véhicule
+  n'est pas `DISPONIBLE`. Sinon, le véhicule bascule en `EN_SERVICE`.
+- **Passer une location à `TERMINEE`** → le véhicule redevient `DISPONIBLE`,
+  et son `mileageKm` est repris si `endMileageKm` est supérieur au
+  kilométrage actuel.
+- **Passer une location à `ANNULEE`** → même remise à disponible, sans
+  reprise de kilométrage.
+- **Suppression bloquée** si la location est `EN_COURS`.
+
+### Paiements de location (`/rentals/{id}/payments`)
+
+Circuit **séparé** de `/payments` (M5) — n'affecte jamais `Payment`/
+`Subscription`. Un paiement de location peut référencer un moyen de paiement
+enregistré (`paymentAccountId`, M9), vérifié comme appartenant au même
+usager que la location.
+
+| Champ | Type | Obligatoire | Règles |
+|---|---|---|---|
+| `amount` | number | oui | `≥ 0` (FCFA) |
+| `method` | enum `PaymentMethod` | oui | |
+| `collectedBy` | UUID | non | champ libre, non validé contre une table |
+| `paymentAccountId` | UUID | non | doit appartenir à l'usager de la location, sinon `400` |
+
+### Endpoints
+
+| Méthode | Path | Rôles | Description |
+|---|---|---|---|
+| GET | `/rentals?status=&passengerId=&vehicleId=` | OWNER, MANAGER | liste filtrable |
+| GET | `/rentals/{id}` | OWNER, MANAGER | détail + paiements |
+| POST | `/rentals` | OWNER, MANAGER | création |
+| PUT | `/rentals/{id}` | OWNER, MANAGER | remplacement complet |
+| PATCH | `/rentals/{id}/status` | OWNER, MANAGER | `{ "status": "EN_COURS" }` |
+| DELETE | `/rentals/{id}` | OWNER | suppression |
+| GET, POST | `/rentals/{id}/payments` | OWNER, MANAGER | historique / encaissement |
+| GET | `/vehicles/{id}/rentals` | OWNER, MANAGER | historique par véhicule |
+| GET | `/passengers/{id}/rentals` | OWNER, MANAGER | historique par usager |
 
 ---
 
