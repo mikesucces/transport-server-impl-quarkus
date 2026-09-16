@@ -54,6 +54,12 @@ les données métier (flotte, usagers, rotations, contrôle).
 
 Quatre rôles existent : `OWNER`, `MANAGER`, `CONTROLLER`, `DRIVER`.
 
+⚠️ Le tableau ci-dessous ne couvre que le périmètre **Flotte** (M2) — chaque
+module ajouté depuis a son propre tableau de rôles dans sa section : Identité
+(§10bis), Rotations (§8bis), Contrôle/Embarquement (§8ter), Lignes
+(§8quater), Tableau de bord global (§8quinquies), Abonnements/Paiements
+(§10ter), Personnel (§10quater).
+
 | Endpoint | Méthode | Rôles autorisés |
 |---|---|---|
 | `/vehicles` | GET | OWNER, MANAGER, CONTROLLER, DRIVER |
@@ -82,10 +88,11 @@ Quatre rôles existent : `OWNER`, `MANAGER`, `CONTROLLER`, `DRIVER`.
 Un appel avec un rôle non autorisé renvoie `403 Forbidden`.
 
 ⚠️ **Point d'attention** : `/drivers/payroll` est réservé à `OWNER` (donnée
-financière), mais `/fleet/alerts` (accessible à `MANAGER`) renvoie aussi
-`monthlyPayroll` dans sa réponse. Un `MANAGER` peut donc voir la masse salariale
-via le tableau de bord. À garder en tête côté front (et à corriger côté API si ce
-n'est pas voulu).
+financière), mais `/fleet/alerts` **et** `/dashboard` (M7, §8quinquies —
+qui embarque `fleetAlerts`), tous deux accessibles à `MANAGER`, renvoient
+aussi `monthlyPayroll`. Un `MANAGER` peut donc voir la masse salariale via
+ces deux tableaux de bord. À garder en tête côté front (et à corriger côté
+API si ce n'est pas voulu).
 
 ---
 
@@ -125,6 +132,14 @@ requêtes.
 | `DocumentType` (documents véhicule) | `ASSURANCE`, `VISITE_TECHNIQUE`, `CARTE_GRISE`, `LICENCE_TRANSPORT`, `AUTRE` |
 | `MaintenanceType` (entretiens) | `VIDANGE`, `REPARATION`, `CONTROLE`, `PNEUMATIQUES`, `AUTRE` |
 | `MaintenanceStatus` (entretiens) | `PLANIFIE`, `EN_COURS`, `TERMINE`, `ANNULE` |
+| `RotationStatus` (rotations, M3) | `PLANIFIEE`, `EN_COURS`, `TERMINEE`, `ANNULEE` |
+| `PassengerStatus` (usagers, M1) | `ACTIVE`, `SUSPENDED`, `DISABLED` |
+| `PaymentMethod` (paiements, M5) | `ESPECES`, `MOBILE_MONEY`, `VIREMENT`, `AUTRE` |
+| `SubscriptionPlan` (abonnements, M5) | `HEBDOMADAIRE`, `MENSUEL`, `TRIMESTRIEL` |
+| `SubscriptionStatus` (abonnements, M5) | `ACTIVE`, `EXPIRED`, `CANCELLED` |
+| `RouteStatus` (lignes, M6) | `ACTIVE`, `SUSPENDUE` |
+| `ScheduleDay` (horaires de ligne, M6) | `LUNDI`, `MARDI`, `MERCREDI`, `JEUDI`, `VENDREDI`, `SAMEDI`, `DIMANCHE` |
+| `StaffType` (personnel, M8) | `OWNER`, `MANAGER`, `CONTROLLER`, `DRIVER` |
 
 Une valeur inconnue envoyée par le front déclenche un `400 BAD_REQUEST` explicite
 (ex. `"Statut de car invalide : XXX"`).
@@ -744,6 +759,11 @@ curl http://localhost:8080/api/fleet/alerts?days=30
 
 ## 12. Schéma de données
 
-Pour le détail des tables, colonnes et cardinalités (y compris le périmètre
-Identité pas encore exposé en REST), voir le diagramme conceptuel (notation
-Merise) : https://claude.ai/code/artifact/080aeab6-3ad5-4d6d-bb38-e0f50ff119cc
+Pour le détail des tables, colonnes et cardinalités, voir le diagramme
+conceptuel (notation Merise) :
+https://claude.ai/code/artifact/080aeab6-3ad5-4d6d-bb38-e0f50ff119cc
+
+⚠️ Ce diagramme date d'avant M3-M8 (rotations, contrôle, abonnements,
+lignes, tableau de bord, personnel) — il ne couvre que le périmètre initial
+(Flotte + Identité). Se référer aux migrations `V6` à `V13` pour le schéma
+à jour de ces modules.
