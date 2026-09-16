@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import ci.transit.system.transport.server.impl.dto.AttendanceDto;
 import ci.transit.system.transport.server.impl.dto.RotationDto;
 import ci.transit.system.transport.server.impl.dto.RotationRequest;
+import ci.transit.system.transport.server.impl.service.AttendanceService;
 import ci.transit.system.transport.server.impl.service.RotationService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -21,6 +23,9 @@ public class RotationResource {
 
     @Inject
     RotationService rotationService;
+
+    @Inject
+    AttendanceService attendanceService;
 
     @GET
     @RolesAllowed({"OWNER", "MANAGER"})
@@ -71,5 +76,12 @@ public class RotationResource {
     public Response deleteRotation(@PathParam("id") UUID identifier) {
         rotationService.delete(identifier);
         return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/{id}/attendances")
+    @RolesAllowed({"OWNER", "MANAGER"})
+    public List<AttendanceDto> getRotationAttendances(@PathParam("id") UUID identifier) {
+        return attendanceService.findByRotation(identifier);
     }
 }

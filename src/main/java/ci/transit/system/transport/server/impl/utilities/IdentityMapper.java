@@ -33,6 +33,7 @@ public final class IdentityMapper {
         dto.identifier = entity.getUuid();
         dto.vehicleIdentifier = entity.getVehicle().getUuid();
         dto.vehicleNumber = entity.getVehicleNumber();
+        dto.rotationIdentifier = entity.getRotation() != null ? entity.getRotation().getUuid() : null;
         dto.validFrom = entity.getValidFrom();
         dto.validUntil = entity.getValidUntil();
         dto.active = entity.isActive();

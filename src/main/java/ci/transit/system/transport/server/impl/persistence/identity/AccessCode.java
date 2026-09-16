@@ -4,6 +4,7 @@ import java.time.Instant;
 
 import ci.transit.system.transport.server.impl.persistence.BaseEntity;
 import ci.transit.system.transport.server.impl.persistence.fleet.Vehicle;
+import ci.transit.system.transport.server.impl.persistence.rotation.Rotation;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
@@ -34,6 +35,10 @@ public class AccessCode extends BaseEntity {
 
     @Column(name = "vehicle_number", nullable = false, length = 30)
     private String vehicleNumber;
+
+    @ManyToOne
+    @JoinColumn(name = "rotation_id")
+    private Rotation rotation;
 
     @Column(name = "code_hash", nullable = false, length = 255)
     private String codeHash;

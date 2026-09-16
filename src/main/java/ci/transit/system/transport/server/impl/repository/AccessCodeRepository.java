@@ -32,6 +32,18 @@ public class AccessCodeRepository {
         return entityManager.find(AccessCode.class, identifier);
     }
 
+    /** Codes actifs pour une rotation, ou a defaut pour son vehicule sans rotation associee. */
+    public List<AccessCode> findActive(UUID rotationIdentifier, UUID vehicleIdentifier) {
+        return entityManager.createQuery(
+            "SELECT a FROM AccessCode a WHERE "
+          + "(a.rotation.uuid = :rotation OR (a.rotation IS NULL AND a.vehicle.uuid = :vehicle)) "
+          + "AND a.validFrom <= CURRENT_TIMESTAMP AND a.validUntil >= CURRENT_TIMESTAMP "
+          + "ORDER BY a.validUntil DESC", AccessCode.class
+        ).setParameter("rotation", rotationIdentifier)
+         .setParameter("vehicle", vehicleIdentifier)
+         .getResultList();
+    }
+
     @Transactional
     public AccessCode save(AccessCode accessCode) {
         if (accessCode.getUuid() == null) {

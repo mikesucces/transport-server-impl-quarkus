@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.UUID;
 
 import ci.transit.system.transport.server.impl.dto.AccessCodeDto;
+import ci.transit.system.transport.server.impl.dto.AccessCodeGenerateRequest;
+import ci.transit.system.transport.server.impl.dto.AccessCodeGeneratedDto;
 import ci.transit.system.transport.server.impl.dto.AccessCodeRequest;
 import ci.transit.system.transport.server.impl.service.AccessCodeService;
 import jakarta.annotation.security.RolesAllowed;
@@ -50,5 +52,13 @@ public class AccessCodeResource {
     public Response deleteAccessCode(@PathParam("id") UUID identifier) {
         accessCodeService.delete(identifier);
         return Response.noContent().build();
+    }
+
+    @POST
+    @Path("/generate")
+    @RolesAllowed({"OWNER", "MANAGER", "CONTROLLER"})
+    public Response generateAccessCode(@Valid AccessCodeGenerateRequest request) {
+        return Response.status(Response.Status.CREATED)
+            .entity(accessCodeService.generate(request)).build();
     }
 }

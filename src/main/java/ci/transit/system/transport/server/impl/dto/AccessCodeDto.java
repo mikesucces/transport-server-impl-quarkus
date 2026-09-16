@@ -14,6 +14,7 @@ public class AccessCodeDto {
   public UUID identifier;
   public UUID vehicleIdentifier;
   public String vehicleNumber;
+  public UUID rotationIdentifier;
   public Instant validFrom;
   public Instant validUntil;
   public boolean active;

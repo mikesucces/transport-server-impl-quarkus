@@ -283,6 +283,80 @@ chauffeur et/ou véhicule** si elles sont affichées.
 
 ---
 
+## 8ter. Contrôle / Embarquement
+
+Module M4 : le rôle `CONTROLLER` génère un code d'accès pour une rotation,
+puis vérifie le code saisi par un usager à l'embarquement. Une vérification
+réussie enregistre une **présence validée** (`attendance`).
+
+### Génération d'un code — `POST /access-codes/generate`
+
+Rôles : `OWNER`, `MANAGER`, `CONTROLLER`.
+
+| Champ (requête) | Type | Obligatoire | Règles |
+|---|---|---|---|
+| `rotationId` | UUID | oui | rotation existante |
+| `validityHours` | number | non | défaut 12h |
+
+Réponse (`201`) — **seul endpoint à renvoyer le code en clair**, une seule fois :
+
+```json
+{
+  "identifier": "...",
+  "rotationIdentifier": "...",
+  "vehicleIdentifier": "...",
+  "vehicleNumber": "4521 CI 01",
+  "code": "7391",
+  "validFrom": "2026-09-16T20:00:00Z",
+  "validUntil": "2026-09-17T08:00:00Z"
+}
+```
+
+➡️ **Effet de bord** : `Rotation.accessCodeReference` est mis à jour avec
+l'identifiant du code généré.
+
+Le reste de la ressource `/access-codes` (CRUD standard) reste réservé à
+`OWNER`/`MANAGER` comme avant ; `rotationIdentifier` (nullable) apparaît
+désormais aussi dans `AccessCodeDto` classique.
+
+### Vérification à l'embarquement — `POST /boarding/verify`
+
+Rôles : `OWNER`, `MANAGER`, `CONTROLLER`.
+
+| Champ (requête) | Type | Obligatoire | Règles |
+|---|---|---|---|
+| `rotationId` | UUID | oui | `404` si la rotation n'existe pas |
+| `code` | string | oui | code saisi par l'usager |
+| `phone` | string | oui | téléphone de l'usager |
+| `controllerId` | UUID | non | champ libre, non validé contre une table (pas d'entité staff côté API) |
+
+⚠️ Cet endpoint renvoie **toujours `200`** — un code faux ou un usager non
+identifié n'est pas une erreur HTTP, c'est un résultat de vérification :
+
+```json
+{
+  "success": false,
+  "message": "Code invalide ou expire",
+  "attendance": null,
+  "loginAttemptId": 42
+}
+```
+
+En cas de succès, `attendance` contient la présence créée. Dans tous les cas,
+un `login_attempt` est enregistré (traçabilité générique, y compris les
+échecs) ; **`attendance` n'est créée que si la vérification réussit.**
+
+### Historique des présences
+
+| Méthode | Path | Rôles | Description |
+|---|---|---|---|
+| GET | `/attendances?rotationId=` | OWNER, MANAGER | liste filtrable |
+| GET | `/attendances/{id}` | OWNER, MANAGER | détail |
+| DELETE | `/attendances/{id}` | OWNER | correction d'audit |
+| GET | `/rotations/{id}/attendances` | OWNER, MANAGER | historique par rotation |
+
+---
+
 ## 9. Ressource : Chauffeurs (`/drivers`)
 
 | Champ | Type | Obligatoire | Règles |
