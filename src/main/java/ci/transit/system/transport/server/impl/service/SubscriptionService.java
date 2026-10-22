@@ -108,6 +108,12 @@ public class SubscriptionService {
         if (subscription.getStatus() == SubscriptionStatus.ACTIVE) {
             throw ApiException.badRequest("Impossible de supprimer un abonnement actif");
         }
+        // Les paiements referencent l'abonnement (cle etrangere) et constituent l'historique
+        // financier : on refuse proprement plutot que de laisser remonter une erreur 500.
+        if (!paymentRepository.findBySubscription(identifier).isEmpty()) {
+            throw ApiException.badRequest(
+                "Impossible de supprimer un abonnement ayant des paiements enregistres");
+        }
         subscriptionRepository.delete(identifier);
     }
 
