@@ -1,0 +1,60 @@
+/* Theme de connexion Transit : encadre des comptes de demonstration. */
+.transit-demo {
+  margin-top: 1.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px dashed #93a4be;
+  border-radius: 10px;
+  background: #f3f6fb;
+  text-align: left;
+}
+.transit-demo__title {
+  font-weight: 700;
+  font-size: .95rem;
+  color: #0f172a;
+  margin-bottom: .35rem;
+}
+.transit-demo__hint {
+  margin: .25rem 0;
+  font-size: .85rem;
+  color: #475569;
+}
+.transit-demo__hint code {
+  font-size: .9rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: #fff;
+  border: 1px solid #d5dce8;
+  border-radius: 6px;
+  padding: .05rem .4rem;
+  user-select: all;
+}
+.transit-demo__list {
+  list-style: none;
+  margin: .6rem 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .5rem;
+}
+.transit-demo__list button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .1rem;
+  padding: .5rem .7rem;
+  border: 1px solid #d5dce8;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.transit-demo__list button:hover,
+.transit-demo__list button:focus-visible {
+  border-color: #2563eb;
+  background: #e8f0fe;
+  outline: none;
+}
+.transit-demo__list strong { font-size: .9rem; color: #0f172a; text-transform: none; letter-spacing: 0; }
+.transit-demo__list span { font-size: .78rem; color: #64748b; text-transform: none; letter-spacing: 0; }

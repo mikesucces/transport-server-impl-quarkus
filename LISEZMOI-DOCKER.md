@@ -36,6 +36,9 @@ La configuration complète de Keycloak (realm, rôles, clients, adresses, dépan
 
 Mot de passe commun : `Transit2026!`
 
+Ces comptes sont **affichés sur la page de connexion** (encadré « Comptes de démonstration ») : un clic sur
+un compte remplit le formulaire.
+
 | Utilisateur | Rôle | Usage prévu |
 |---|---|---|
 | `admin` | OWNER | accès complet, y compris les données financières |
@@ -111,4 +114,6 @@ Créer un fichier `.env` à côté de `docker-compose.full.yml` (voir `.env.exam
 
 Cette configuration est faite pour le **développement local** : mots de passe par défaut, Keycloak
 en mode `start-dev`, HTTP sans chiffrement, client `transport-dev` permettant la connexion directe.
-Ne pas l'exposer sur Internet ni l'utiliser en production sans durcissement.
+Ne pas l'exposer sur Internet ni l'utiliser en production sans durcissement. En particulier, retirer l'encadré
+des comptes de démonstration de la page de connexion (`showDemoAccounts=false` dans
+`keycloak/themes/transit/login/theme.properties`).

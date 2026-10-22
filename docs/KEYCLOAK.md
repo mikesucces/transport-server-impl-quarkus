@@ -20,6 +20,7 @@ le rôle qu'il contient.
 | Fichier | Ce qu'il contient |
 |---|---|
 | [`keycloak/realm-transit.json`](../keycloak/realm-transit.json) | Le realm complet : rôles, clients, utilisateurs de test. Importé automatiquement par Docker |
+| [`keycloak/themes/transit/`](../keycloak/themes/transit/login) | Thème de la page de connexion : encadré « Comptes de démonstration » |
 | [`docker-compose.full.yml`](../docker-compose.full.yml) | Le conteneur Keycloak (version, adresse publique, import du realm) et les adresses données à l'API et à l'administration |
 | [`src/main/resources/application.properties`](../src/main/resources/application.properties) | Connexion de l'**API** : propriétés `quarkus.oidc.*` |
 | [`client/src/main/resources/application.properties`](../client/src/main/resources/application.properties) | Connexion de l'**administration** : propriétés `quarkus.oidc.*` |
@@ -70,6 +71,22 @@ Mot de passe commun : `Transit2026!`
 | `driver` | DRIVER |
 
 Durée de vie d'un jeton d'accès : 30 minutes.
+
+### Page de connexion (thème `transit`)
+
+La page de connexion est en français et affiche, sous le formulaire, un encadré **« Comptes de démonstration »** :
+le mot de passe commun et les quatre comptes. Un clic sur un compte remplit le formulaire.
+
+- Le thème est dans [`keycloak/themes/transit/login`](../keycloak/themes/transit/login) : il hérite du thème
+  `keycloak.v2` et ne remplace que `login.ftl` (ajout de l'encadré) et une feuille de style.
+- Il est branché sur le realm (`"loginTheme": "transit"` dans `realm-transit.json`) et monté dans le
+  conteneur par `docker-compose.full.yml`.
+- **L'encadré se désactive** avec `showDemoAccounts=false` dans `keycloak/themes/transit/login/theme.properties`.
+  À faire dès que les comptes de test ne sont plus publics.
+- `login.ftl` est une copie du modèle de Keycloak **26.0** : en cas de changement de version de l'image,
+  recomparer avec le modèle d'origine.
+- Sur un autre Keycloak, copier le dossier `themes/transit` dans son répertoire `themes/` puis choisir le thème
+  *Login theme* = `transit` dans *Realm settings > Themes*.
 
 ## 3. Comment l'API se connecte
 
@@ -211,11 +228,12 @@ fichier (ou exporter le realm depuis la console).
 
 Ce paramétrage est destiné au **développement local** :
 
-- mots de passe de test connus (`Transit2026!`, `admin` / `admin`) ;
+- mots de passe de test connus (`Transit2026!`, `admin` / `admin`), **affichés sur la page de connexion** ;
 - Keycloak en mode `start-dev`, en HTTP, avec base H2 intégrée ;
 - client `transport-dev` autorisant la connexion directe par mot de passe ;
 - secret de session de l'administration fixé par défaut (`OIDC_STATE_SECRET`).
 
 Avant toute mise en ligne : Keycloak en mode production derrière HTTPS avec une vraie base, nouveaux mots de
-passe, suppression des comptes de test et du client `transport-dev`, adresses de redirection du client
+passe, suppression des comptes de test, du client `transport-dev` et de l'encadré des comptes de démonstration
+(`showDemoAccounts=false`), adresses de redirection du client
 `transport` limitées à l'adresse réelle, `DEV_BYPASS_ROLES` laissée à `false` et un `OIDC_STATE_SECRET` propre.

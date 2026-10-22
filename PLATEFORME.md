@@ -63,7 +63,7 @@ Prérequis : Java 21, Maven 3.9+, PostgreSQL et un Keycloak avec le realm `trans
 
 ## Comptes de test et rôles
 
-Mot de passe commun : `Transit2026!`
+Mot de passe commun : `Transit2026!`. Ces comptes sont affichés sur la page de connexion (un clic remplit le formulaire).
 
 | Utilisateur | Rôle | Accès |
 |---|---|---|
