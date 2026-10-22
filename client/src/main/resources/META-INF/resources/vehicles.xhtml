@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Cars"/>
+  <ui:param name="pageSubtitle" value="Gérez le parc : état, kilométrage et disponibilité de chaque véhicule"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton value="Nouveau car" icon="pi pi-plus" action="#{vehicleBean.prepareCreate}"
+                       update=":dialogForm" oncomplete="PF('dlg').show()" process="@this"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="listForm">
+      <section class="card">
+        <div class="toolbar">
+          <span class="search"><i class="pi pi-search"></i>
+            <p:inputText id="q" value="#{vehicleBean.search}" placeholder="Rechercher une immatriculation, une marque…">
+              <p:ajax event="keyup" delay="300" update="table count"/>
+            </p:inputText>
+          </span>
+          <p:selectOneMenu value="#{vehicleBean.statusFilter}">
+            <f:selectItem itemLabel="Tous les statuts" itemValue=""/>
+            <f:selectItems value="#{vehicleBean.statuses}" var="s" itemValue="#{s}" itemLabel="#{ui.label(s)}"/>
+            <p:ajax update="table count"/>
+          </p:selectOneMenu>
+          <span class="grow"></span>
+          <h:outputText id="count" styleClass="result-count" value="#{vehicleBean.filteredCount} sur #{vehicleBean.total} cars"/>
+        </div>
+
+        <p:dataTable id="table" value="#{vehicleBean.filtered}" var="v" rowKey="#{v.identifier}"
+                     paginator="true" rows="10" paginatorAlwaysVisible="false" paginatorPosition="bottom" reflow="true">
+          <f:facet name="emptyMessage">
+            <div class="empty-state"><i class="pi pi-car"></i><strong>Aucun car trouvé</strong>
+              <span>Modifiez votre recherche ou ajoutez un nouveau car.</span></div>
+          </f:facet>
+          <p:column headerText="Car" sortBy="#{v.plateNumber}">
+            <span class="plate">#{v.plateNumber}</span>
+            <span class="cell-sub">#{v.brand} #{v.model}</span>
+          </p:column>
+          <p:column headerText="Année" sortBy="#{v.year}"><span class="mono">#{v.year}</span></p:column>
+          <p:column headerText="Places" sortBy="#{v.capacity}"><span class="mono">#{v.capacity}</span></p:column>
+          <p:column headerText="Kilométrage" sortBy="#{v.mileageKm}"><span class="mono">#{ui.number(v.mileageKm)} km</span></p:column>
+          <p:column headerText="Statut" sortBy="#{v.status}">
+            <p:tag value="#{ui.label(v.status)}" severity="#{ui.severity(v.status)}"/>
+          </p:column>
+          <p:column headerText="" style="width:7rem">
+            <div class="row-actions">
+              <p:commandButton icon="pi pi-pencil" title="Modifier" styleClass="act act-brand"
+                               action="#{vehicleBean.prepareEdit(v)}" update=":dialogForm"
+                               oncomplete="PF('dlg').show()" process="@this"/>
+              <p:commandButton icon="pi pi-trash" title="Supprimer" styleClass="act act-danger"
+                               action="#{vehicleBean.delete(v)}" update="table count :growl" process="@this">
+                <p:confirm header="Supprimer ce car ?" message="Le car #{v.plateNumber} sera définitivement supprimé." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+            </div>
+          </p:column>
+        </p:dataTable>
+      </section>
+    </h:form>
+
+    <h:form id="dialogForm">
+      <p:dialog header="#{vehicleBean.editing ? 'Modifier le car' : 'Nouveau car'}" widgetVar="dlg"
+                modal="true" styleClass="dlg-lg" resizable="false" draggable="false" responsive="true">
+        <p:messages id="dlgMessages" closable="true"/>
+        <div class="form-grid">
+          <div class="field">
+            <p:outputLabel for="plate" value="Immatriculation"/>
+            <p:inputText id="plate" value="#{vehicleBean.form.plateNumber}" required="true"
+                         requiredMessage="L'immatriculation est obligatoire" placeholder="ex. 4521 CI 01"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="st" value="Statut"/>
+            <p:selectOneMenu id="st" value="#{vehicleBean.form.status}">
+              <f:selectItems value="#{vehicleBean.statuses}" var="s" itemValue="#{s}" itemLabel="#{ui.label(s)}"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="brand" value="Marque"/>
+            <p:inputText id="brand" value="#{vehicleBean.form.brand}" required="true" requiredMessage="La marque est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="model" value="Modèle"/>
+            <p:inputText id="model" value="#{vehicleBean.form.model}" required="true" requiredMessage="Le modèle est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="year" value="Année"/>
+            <p:inputNumber id="year" value="#{vehicleBean.form.year}" decimalPlaces="0" thousandSeparator="" minValue="1950" maxValue="2100"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="cap" value="Nombre de places"/>
+            <p:inputNumber id="cap" value="#{vehicleBean.form.capacity}" decimalPlaces="0" minValue="1" maxValue="120"
+                           required="true" requiredMessage="Le nombre de places est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="km" value="Kilométrage (km)"/>
+            <p:inputNumber id="km" value="#{vehicleBean.form.mileageKm}" decimalPlaces="0" minValue="0" thousandSeparator=" "/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="date" value="Mise en service"/>
+            <p:datePicker id="date" value="#{vehicleBean.form.commissionedAt}" pattern="dd/MM/yyyy" showIcon="true"/>
+          </div>
+          <div class="field full">
+            <p:outputLabel for="notes" value="Notes"/>
+            <p:inputTextarea id="notes" value="#{vehicleBean.form.notes}" rows="3" placeholder="Informations utiles sur ce car"/>
+          </div>
+        </div>
+        <f:facet name="footer">
+          <p:commandButton value="Annuler" type="button" styleClass="ui-button-flat" onclick="PF('dlg').hide()"/>
+          <p:commandButton value="Enregistrer" icon="pi pi-check" action="#{vehicleBean.save}"
+                           update="dlgMessages :listForm :growl"
+                           oncomplete="if (!args.validationFailed) PF('dlg').hide()"/>
+        </f:facet>
+      </p:dialog>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>

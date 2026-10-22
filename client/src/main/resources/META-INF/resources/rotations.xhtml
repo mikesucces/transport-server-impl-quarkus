@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Rotations"/>
+  <ui:param name="pageSubtitle" value="Affectation des chauffeurs et des cars aux départs"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton value="Nouvelle rotation" icon="pi pi-plus" action="#{rotationBean.prepareCreate}"
+                       update=":dialogForm" oncomplete="PF('dlg').show()" process="@this"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="listForm">
+      <section class="card">
+        <div class="toolbar">
+          <span class="search"><i class="pi pi-search"></i>
+            <p:inputText id="q" value="#{rotationBean.search}" placeholder="Rechercher une ligne, un chauffeur, un car…">
+              <p:ajax event="keyup" delay="300" update="table count"/>
+            </p:inputText>
+          </span>
+          <p:selectOneMenu value="#{rotationBean.statusFilter}">
+            <f:selectItem itemLabel="Tous les statuts" itemValue=""/>
+            <f:selectItems value="#{rotationBean.statuses}" var="s" itemValue="#{s}" itemLabel="#{ui.label(s)}"/>
+            <p:ajax update="table count"/>
+          </p:selectOneMenu>
+          <span class="grow"></span>
+          <h:outputText id="count" styleClass="result-count" value="#{rotationBean.filteredCount} sur #{rotationBean.total} rotations"/>
+        </div>
+
+        <p:dataTable id="table" value="#{rotationBean.filtered}" var="r" rowKey="#{r.identifier}"
+                     paginator="true" rows="10" paginatorAlwaysVisible="false" paginatorPosition="bottom" reflow="true">
+          <f:facet name="emptyMessage">
+            <div class="empty-state"><i class="pi pi-sync"></i><strong>Aucune rotation trouvée</strong>
+              <span>Modifiez votre recherche ou planifiez une rotation.</span></div>
+          </f:facet>
+          <p:column headerText="Départ" sortBy="#{r.scheduledStart}">
+            <span class="mono"><strong>#{ui.dateTime(r.scheduledStart)}</strong></span>
+            <span class="cell-sub">Arrivée prévue #{ui.hour(r.scheduledEnd)}</span>
+          </p:column>
+          <p:column headerText="Ligne" sortBy="#{r.routeCode}">
+            <h:panelGroup rendered="#{not empty r.routeCode}">
+              <strong>#{r.routeCode}</strong><span class="cell-sub">#{r.routeName}</span>
+            </h:panelGroup>
+            <h:outputText value="Rotation libre" styleClass="muted" rendered="#{empty r.routeCode}"/>
+          </p:column>
+          <p:column headerText="Chauffeur" sortBy="#{r.driverFullName}">
+            <div class="cell-person"><span class="avatar">#{ui.initials(r.driverFullName)}</span>
+              <div><strong>#{r.driverFullName}</strong></div></div>
+          </p:column>
+          <p:column headerText="Car"><span class="plate">#{r.plateNumber}</span></p:column>
+          <p:column headerText="Statut" sortBy="#{r.status}">
+            <p:tag value="#{ui.label(r.status)}" severity="#{ui.severity(r.status)}"/>
+          </p:column>
+          <p:column headerText="" style="width:10rem">
+            <div class="row-actions">
+              <p:commandButton icon="pi pi-play" title="Démarrer" styleClass="act act-ok"
+                               rendered="#{r.status eq 'PLANIFIEE'}"
+                               action="#{rotationBean.changeStatus(r, 'EN_COURS')}" update="table count :growl" process="@this"/>
+              <p:commandButton icon="pi pi-check" title="Terminer" styleClass="act act-ok"
+                               rendered="#{r.status eq 'EN_COURS'}"
+                               action="#{rotationBean.changeStatus(r, 'TERMINEE')}" update="table count :growl" process="@this"/>
+              <p:commandButton icon="pi pi-times-circle" title="Annuler" styleClass="act act-warn"
+                               rendered="#{r.status eq 'PLANIFIEE' or r.status eq 'EN_COURS'}"
+                               action="#{rotationBean.changeStatus(r, 'ANNULEE')}" update="table count :growl" process="@this">
+                <p:confirm header="Annuler cette rotation ?" message="La rotation sera marquée comme annulée." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+              <p:commandButton icon="pi pi-trash" title="Supprimer" styleClass="act act-danger"
+                               action="#{rotationBean.delete(r)}" update="table count :growl" process="@this">
+                <p:confirm header="Supprimer cette rotation ?" message="Cette action est définitive." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+            </div>
+          </p:column>
+        </p:dataTable>
+      </section>
+    </h:form>
+
+    <h:form id="dialogForm">
+      <p:dialog header="Nouvelle rotation" widgetVar="dlg" modal="true" styleClass="dlg-lg" resizable="false"
+                draggable="false" responsive="true">
+        <p:messages id="dlgMessages" closable="true"/>
+        <div class="form-grid">
+          <div class="field">
+            <p:outputLabel for="drv" value="Chauffeur"/>
+            <p:selectOneMenu id="drv" value="#{rotationBean.driverId}" required="true"
+                             requiredMessage="Le chauffeur est obligatoire" filter="true" filterMatchMode="contains">
+              <f:selectItem itemLabel="Choisir un chauffeur…" itemValue="" noSelectionOption="true"/>
+              <f:selectItems value="#{rotationBean.drivers}" var="d"
+                             itemValue="#{d.identifier.toString()}" itemLabel="#{d.fullName} (#{ui.label(d.status)})"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="veh" value="Car"/>
+            <p:selectOneMenu id="veh" value="#{rotationBean.vehicleId}" required="true"
+                             requiredMessage="Le véhicule est obligatoire" filter="true" filterMatchMode="contains">
+              <f:selectItem itemLabel="Choisir un car…" itemValue="" noSelectionOption="true"/>
+              <f:selectItems value="#{rotationBean.vehicles}" var="v"
+                             itemValue="#{v.identifier.toString()}" itemLabel="#{v.plateNumber} (#{ui.label(v.status)})"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field full">
+            <p:outputLabel for="rte" value="Ligne"/>
+            <p:selectOneMenu id="rte" value="#{rotationBean.routeId}">
+              <f:selectItem itemLabel="Aucune (rotation libre)" itemValue="" noSelectionOption="true"/>
+              <f:selectItems value="#{rotationBean.routes}" var="r"
+                             itemValue="#{r.identifier.toString()}" itemLabel="#{r.code} · #{r.name}"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="start" value="Départ prévu"/>
+            <p:datePicker id="start" value="#{rotationBean.start}" pattern="dd/MM/yyyy HH:mm" showTime="true" showIcon="true"
+                          required="true" requiredMessage="Le début planifié est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="end" value="Arrivée prévue"/>
+            <p:datePicker id="end" value="#{rotationBean.end}" pattern="dd/MM/yyyy HH:mm" showTime="true" showIcon="true"/>
+          </div>
+          <div class="field full">
+            <p:outputLabel for="notes" value="Notes"/>
+            <p:inputTextarea id="notes" value="#{rotationBean.form.notes}" rows="3"/>
+          </div>
+        </div>
+        <f:facet name="footer">
+          <p:commandButton value="Annuler" type="button" styleClass="ui-button-flat" onclick="PF('dlg').hide()"/>
+          <p:commandButton value="Enregistrer" icon="pi pi-check" action="#{rotationBean.save}"
+                           update="dlgMessages :listForm :growl"
+                           oncomplete="if (!args.validationFailed) PF('dlg').hide()"/>
+        </f:facet>
+      </p:dialog>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>

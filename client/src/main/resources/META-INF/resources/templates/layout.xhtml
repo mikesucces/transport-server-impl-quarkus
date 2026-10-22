@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<h:head>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>#{pageTitle} · Transit Admin</title>
+  <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Cpath d='M7 20V11a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v9H7z' fill='white'/%3E%3Ccircle cx='12' cy='22' r='2.4' fill='white'/%3E%3Ccircle cx='20' cy='22' r='2.4' fill='white'/%3E%3C/svg%3E"/>
+  <h:outputStylesheet name="css/admin.css"/>
+</h:head>
+<h:body styleClass="app-body">
+  <p:ajaxStatus styleClass="ajax-status">
+    <f:facet name="start"><div class="ajax-bar"></div></f:facet>
+    <f:facet name="complete"><span></span></f:facet>
+  </p:ajaxStatus>
+
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <span class="brand-mark"><i class="pi pi-truck"></i></span>
+        <span class="brand-text"><strong>Transit</strong><small>Administration</small></span>
+      </div>
+
+      <nav class="nav">
+        <div class="nav-label">Exploitation</div>
+        <h:link outcome="/index" styleClass="nav-item #{view.viewId eq '/index.xhtml' ? 'active' : ''}">
+          <i class="pi pi-chart-bar"></i><span>Tableau de bord</span></h:link>
+        <h:link outcome="/rotations" styleClass="nav-item #{view.viewId eq '/rotations.xhtml' ? 'active' : ''}">
+          <i class="pi pi-sync"></i><span>Rotations</span></h:link>
+        <h:link outcome="/routes" styleClass="nav-item #{view.viewId eq '/routes.xhtml' ? 'active' : ''}">
+          <i class="pi pi-map"></i><span>Lignes</span></h:link>
+        <h:link outcome="/schedules" styleClass="nav-item #{view.viewId eq '/schedules.xhtml' ? 'active' : ''}">
+          <i class="pi pi-clock"></i><span>Horaires</span></h:link>
+
+        <div class="nav-label">Flotte</div>
+        <h:link outcome="/vehicles" styleClass="nav-item #{view.viewId eq '/vehicles.xhtml' ? 'active' : ''}">
+          <i class="pi pi-car"></i><span>Cars</span></h:link>
+        <h:link outcome="/documents" styleClass="nav-item #{view.viewId eq '/documents.xhtml' ? 'active' : ''}">
+          <i class="pi pi-file"></i><span>Documents</span></h:link>
+        <h:link outcome="/maintenances" styleClass="nav-item #{view.viewId eq '/maintenances.xhtml' ? 'active' : ''}">
+          <i class="pi pi-wrench"></i><span>Entretiens</span></h:link>
+        <h:link outcome="/drivers" styleClass="nav-item #{view.viewId eq '/drivers.xhtml' ? 'active' : ''}">
+          <i class="pi pi-id-card"></i><span>Chauffeurs</span></h:link>
+
+        <div class="nav-label">Clientèle</div>
+        <h:link outcome="/passengers" styleClass="nav-item #{view.viewId eq '/passengers.xhtml' ? 'active' : ''}">
+          <i class="pi pi-users"></i><span>Usagers</span></h:link>
+        <h:link outcome="/subscriptions" styleClass="nav-item #{view.viewId eq '/subscriptions.xhtml' ? 'active' : ''}">
+          <i class="pi pi-ticket"></i><span>Abonnements</span></h:link>
+        <h:link outcome="/rentals" styleClass="nav-item #{view.viewId eq '/rentals.xhtml' ? 'active' : ''}">
+          <i class="pi pi-key"></i><span>Locations</span></h:link>
+      </nav>
+
+      <div class="user-card">
+        <span class="avatar avatar-lg">#{currentUser.initials}</span>
+        <div class="user-meta">
+          <strong>#{currentUser.displayName}</strong>
+          <small>#{ui.label(currentUser.role)}</small>
+        </div>
+        <a class="logout" href="#{request.contextPath}/logout" title="Se déconnecter"><i class="pi pi-sign-out"></i></a>
+      </div>
+    </aside>
+
+    <div class="scrim" onclick="document.body.classList.remove('nav-open')"></div>
+
+    <div class="main">
+      <header class="topbar">
+        <button type="button" class="menu-toggle" aria-label="Menu"
+                onclick="document.body.classList.toggle('nav-open')"><i class="pi pi-bars"></i></button>
+        <div class="page-title">
+          <h1>#{pageTitle}</h1>
+          <p>#{pageSubtitle}</p>
+        </div>
+        <div class="page-actions"><ui:insert name="actions"/></div>
+      </header>
+
+      <main class="content">
+        <p:growl id="growl" showDetail="true" life="5000" styleClass="app-growl"/>
+        <ui:insert name="content"/>
+      </main>
+    </div>
+  </div>
+
+  <h:form id="confirmForm">
+    <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" styleClass="app-confirm"
+                     header="Confirmation">
+      <p:commandButton value="Non" type="button" styleClass="ui-confirmdialog-no ui-button-flat"/>
+      <p:commandButton value="Oui, continuer" type="button" styleClass="ui-confirmdialog-yes ui-button-danger"/>
+    </p:confirmDialog>
+  </h:form>
+</h:body>
+</html>

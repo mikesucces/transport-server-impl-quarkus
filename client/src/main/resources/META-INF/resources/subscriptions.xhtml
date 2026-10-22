@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Abonnements"/>
+  <ui:param name="pageSubtitle" value="Formules souscrites par les usagers et leurs échéances"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton value="Nouvel abonnement" icon="pi pi-plus" action="#{subscriptionBean.prepareCreate}"
+                       update=":dialogForm" oncomplete="PF('dlg').show()" process="@this"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="listForm">
+      <section class="card">
+        <div class="toolbar">
+          <span class="search"><i class="pi pi-search"></i>
+            <p:inputText id="q" value="#{subscriptionBean.search}" placeholder="Rechercher un usager ou une formule…">
+              <p:ajax event="keyup" delay="300" update="table count"/>
+            </p:inputText>
+          </span>
+          <p:selectOneMenu value="#{subscriptionBean.statusFilter}">
+            <f:selectItem itemLabel="Tous les statuts" itemValue=""/>
+            <f:selectItem itemLabel="Actif" itemValue="ACTIVE"/>
+            <f:selectItem itemLabel="Expiré" itemValue="EXPIRED"/>
+            <f:selectItem itemLabel="Annulé" itemValue="CANCELLED"/>
+            <p:ajax update="table count"/>
+          </p:selectOneMenu>
+          <span class="grow"></span>
+          <h:outputText id="count" styleClass="result-count" value="#{subscriptionBean.filteredCount} sur #{subscriptionBean.total} abonnements"/>
+        </div>
+
+        <p:dataTable id="table" value="#{subscriptionBean.filtered}" var="s" rowKey="#{s.identifier}"
+                     paginator="true" rows="10" paginatorAlwaysVisible="false" paginatorPosition="bottom" reflow="true">
+          <f:facet name="emptyMessage">
+            <div class="empty-state"><i class="pi pi-ticket"></i><strong>Aucun abonnement trouvé</strong>
+              <span>Modifiez votre recherche ou créez un abonnement.</span></div>
+          </f:facet>
+          <p:column headerText="Usager" sortBy="#{s.passengerFullName}">
+            <div class="cell-person"><span class="avatar">#{ui.initials(s.passengerFullName)}</span>
+              <div><strong>#{s.passengerFullName}</strong></div></div>
+          </p:column>
+          <p:column headerText="Formule" sortBy="#{s.plan}">#{ui.label(s.plan)}</p:column>
+          <p:column headerText="Période" sortBy="#{s.endsOn}">
+            <span class="mono">#{ui.date(s.startsOn)} → #{ui.date(s.endsOn)}</span>
+            <p:tag value="#{ui.daysText(s.daysRemaining)}" severity="#{ui.daysSeverity(s.daysRemaining)}"
+                   rendered="#{s.status eq 'ACTIVE'}"/>
+          </p:column>
+          <p:column headerText="Statut" sortBy="#{s.status}">
+            <p:tag value="#{ui.label(s.status)}" severity="#{ui.severity(s.status)}"/>
+          </p:column>
+          <p:column headerText="" style="width:8rem">
+            <div class="row-actions">
+              <p:commandButton icon="pi pi-times-circle" title="Annuler l'abonnement" styleClass="act act-warn"
+                               rendered="#{s.status eq 'ACTIVE'}"
+                               action="#{subscriptionBean.cancel(s)}" update="table count :growl" process="@this">
+                <p:confirm header="Annuler cet abonnement ?" message="L'abonnement de #{s.passengerFullName} sera annulé." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+              <p:commandButton icon="pi pi-trash" title="Supprimer" styleClass="act act-danger"
+                               action="#{subscriptionBean.delete(s)}" update="table count :growl" process="@this">
+                <p:confirm header="Supprimer cet abonnement ?" message="Cette action est définitive." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+            </div>
+          </p:column>
+        </p:dataTable>
+      </section>
+    </h:form>
+
+    <h:form id="dialogForm">
+      <p:dialog header="Nouvel abonnement" widgetVar="dlg" modal="true" styleClass="dlg-md" resizable="false"
+                draggable="false" responsive="true">
+        <p:messages id="dlgMessages" closable="true"/>
+        <div class="form-grid">
+          <div class="field full">
+            <p:outputLabel for="pax" value="Usager"/>
+            <p:selectOneMenu id="pax" value="#{subscriptionBean.passengerId}" required="true"
+                             requiredMessage="L'usager est obligatoire" filter="true" filterMatchMode="contains">
+              <f:selectItem itemLabel="Choisir un usager…" itemValue="" noSelectionOption="true"/>
+              <f:selectItems value="#{subscriptionBean.passengers}" var="pp"
+                             itemValue="#{pp.identifier.toString()}" itemLabel="#{pp.fullName} (#{pp.phone})"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="plan" value="Formule"/>
+            <p:selectOneMenu id="plan" value="#{subscriptionBean.form.plan}">
+              <f:selectItems value="#{subscriptionBean.plans}" var="x" itemValue="#{x}" itemLabel="#{ui.label(x)}"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="method" value="Mode de paiement"/>
+            <p:selectOneMenu id="method" value="#{subscriptionBean.form.method}">
+              <f:selectItems value="#{subscriptionBean.methods}" var="x" itemValue="#{x}" itemLabel="#{ui.label(x)}"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field full">
+            <p:outputLabel for="amount" value="Montant encaissé (FCFA)"/>
+            <p:inputNumber id="amount" value="#{subscriptionBean.form.amount}" decimalPlaces="0" minValue="0" thousandSeparator=" "
+                           required="true" requiredMessage="Le montant est obligatoire"/>
+          </div>
+        </div>
+        <f:facet name="footer">
+          <p:commandButton value="Annuler" type="button" styleClass="ui-button-flat" onclick="PF('dlg').hide()"/>
+          <p:commandButton value="Enregistrer" icon="pi pi-check" action="#{subscriptionBean.save}"
+                           update="dlgMessages :listForm :growl"
+                           oncomplete="if (!args.validationFailed) PF('dlg').hide()"/>
+        </f:facet>
+      </p:dialog>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>

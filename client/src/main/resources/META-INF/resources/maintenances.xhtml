@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Entretiens"/>
+  <ui:param name="pageSubtitle" value="Historique et planification de la maintenance de chaque car"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton id="addBtn" value="Nouvel entretien" icon="pi pi-plus" action="#{maintenanceBean.prepareCreate}"
+                       disabled="#{not maintenanceBean.vehicleSelected}"
+                       update=":dialogForm" oncomplete="PF('dlg').show()" process="@this"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="listForm">
+      <section class="card">
+        <div class="picker">
+          <p:outputLabel for="veh" value="Car"/>
+          <p:selectOneMenu id="veh" value="#{maintenanceBean.vehicleId}" filter="true" filterMatchMode="contains" style="min-width:320px">
+            <f:selectItem itemLabel="Choisir un car…" itemValue="" noSelectionOption="true"/>
+            <f:selectItems value="#{maintenanceBean.vehicles}" var="v"
+                           itemValue="#{v.identifier.toString()}" itemLabel="#{v.plateNumber} · #{v.brand} #{v.model}"/>
+            <p:ajax listener="#{maintenanceBean.load}" update="table :actionsForm :growl"/>
+          </p:selectOneMenu>
+        </div>
+
+        <p:dataTable id="table" value="#{maintenanceBean.maintenances}" var="m" rowKey="#{m.identifier}" reflow="true">
+          <f:facet name="emptyMessage">
+            <div class="empty-state"><i class="pi pi-wrench"></i>
+              <strong>#{maintenanceBean.vehicleSelected ? 'Aucun entretien pour ce car' : 'Sélectionnez un car'}</strong>
+              <span>#{maintenanceBean.vehicleSelected ? 'Planifiez une vidange, une réparation…' : 'Choisissez un car pour consulter son historique.'}</span></div>
+          </f:facet>
+          <p:column headerText="Entretien" sortBy="#{m.maintenanceType}"><strong>#{ui.label(m.maintenanceType)}</strong>
+            <span class="cell-sub">#{m.description}</span></p:column>
+          <p:column headerText="Prévu le" sortBy="#{m.scheduledOn}"><span class="mono">#{ui.date(m.scheduledOn)}</span></p:column>
+          <p:column headerText="Effectué le"><span class="mono">#{ui.date(m.performedOn)}</span></p:column>
+          <p:column headerText="Kilométrage"><span class="mono">#{empty m.mileageKm ? '—' : ui.number(m.mileageKm).concat(' km')}</span></p:column>
+          <p:column headerText="Coût"><span class="amount">#{ui.money(m.costAmount)}</span></p:column>
+          <p:column headerText="Garage">#{empty m.garage ? '—' : m.garage}</p:column>
+          <p:column headerText="Statut" sortBy="#{m.status}">
+            <p:tag value="#{ui.label(m.status)}" severity="#{ui.severity(m.status)}"/>
+          </p:column>
+          <p:column headerText="" style="width:5rem">
+            <div class="row-actions">
+              <p:commandButton icon="pi pi-trash" title="Supprimer" styleClass="act act-danger"
+                               action="#{maintenanceBean.delete(m)}" update="table :growl" process="@this">
+                <p:confirm header="Supprimer cet entretien ?" message="Cette action est définitive." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+            </div>
+          </p:column>
+        </p:dataTable>
+      </section>
+    </h:form>
+
+    <h:form id="dialogForm">
+      <p:dialog header="Nouvel entretien" widgetVar="dlg" modal="true" styleClass="dlg-lg" resizable="false"
+                draggable="false" responsive="true">
+        <p:messages id="dlgMessages" closable="true"/>
+        <div class="form-grid">
+          <div class="field">
+            <p:outputLabel for="type" value="Type d'entretien"/>
+            <p:selectOneMenu id="type" value="#{maintenanceBean.form.maintenanceType}">
+              <f:selectItems value="#{maintenanceBean.types}" var="t" itemValue="#{t}" itemLabel="#{ui.label(t)}"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="st" value="Statut"/>
+            <p:selectOneMenu id="st" value="#{maintenanceBean.form.status}">
+              <f:selectItems value="#{maintenanceBean.statuses}" var="s" itemValue="#{s}" itemLabel="#{ui.label(s)}"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="sch" value="Date prévue"/>
+            <p:datePicker id="sch" value="#{maintenanceBean.form.scheduledOn}" pattern="dd/MM/yyyy" showIcon="true"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="per" value="Date de réalisation"/>
+            <p:datePicker id="per" value="#{maintenanceBean.form.performedOn}" pattern="dd/MM/yyyy" showIcon="true"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="km" value="Kilométrage (km)"/>
+            <p:inputNumber id="km" value="#{maintenanceBean.form.mileageKm}" decimalPlaces="0" minValue="0" thousandSeparator=" "/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="cost" value="Coût (FCFA)"/>
+            <p:inputNumber id="cost" value="#{maintenanceBean.form.costAmount}" decimalPlaces="0" minValue="0" thousandSeparator=" "/>
+          </div>
+          <div class="field full">
+            <p:outputLabel for="gar" value="Garage"/>
+            <p:inputText id="gar" value="#{maintenanceBean.form.garage}"/>
+          </div>
+          <div class="field full">
+            <p:outputLabel for="desc" value="Description"/>
+            <p:inputTextarea id="desc" value="#{maintenanceBean.form.description}" rows="3"/>
+          </div>
+        </div>
+        <f:facet name="footer">
+          <p:commandButton value="Annuler" type="button" styleClass="ui-button-flat" onclick="PF('dlg').hide()"/>
+          <p:commandButton value="Enregistrer" icon="pi pi-check" action="#{maintenanceBean.save}"
+                           update="dlgMessages :listForm:table :growl"
+                           oncomplete="if (!args.validationFailed) PF('dlg').hide()"/>
+        </f:facet>
+      </p:dialog>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>

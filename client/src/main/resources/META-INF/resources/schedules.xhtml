@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Horaires"/>
+  <ui:param name="pageSubtitle" value="Jours et heures de départ de chaque ligne"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton id="addBtn" value="Nouvel horaire" icon="pi pi-plus" action="#{scheduleBean.prepareCreate}"
+                       disabled="#{not scheduleBean.routeSelected}"
+                       update=":dialogForm" oncomplete="PF('dlg').show()" process="@this"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="listForm">
+      <section class="card">
+        <div class="picker">
+          <p:outputLabel for="rte" value="Ligne"/>
+          <p:selectOneMenu id="rte" value="#{scheduleBean.routeId}" filter="true" filterMatchMode="contains" style="min-width:320px">
+            <f:selectItem itemLabel="Choisir une ligne…" itemValue="" noSelectionOption="true"/>
+            <f:selectItems value="#{scheduleBean.routes}" var="r"
+                           itemValue="#{r.identifier.toString()}" itemLabel="#{r.code} · #{r.name}"/>
+            <p:ajax listener="#{scheduleBean.load}" update="table :actionsForm :growl"/>
+          </p:selectOneMenu>
+        </div>
+
+        <p:dataTable id="table" value="#{scheduleBean.schedules}" var="s" rowKey="#{s.identifier}" reflow="true">
+          <f:facet name="emptyMessage">
+            <div class="empty-state"><i class="pi pi-clock"></i>
+              <strong>#{scheduleBean.routeSelected ? 'Aucun horaire pour cette ligne' : 'Sélectionnez une ligne'}</strong>
+              <span>#{scheduleBean.routeSelected ? 'Ajoutez les jours et heures de départ.' : 'Choisissez une ligne pour consulter ses horaires.'}</span></div>
+          </f:facet>
+          <p:column headerText="Jour"><strong>#{ui.label(s.dayOfWeek)}</strong></p:column>
+          <p:column headerText="Heure de départ"><span class="mono">#{ui.time(s.departureTime)}</span></p:column>
+          <p:column headerText="" style="width:5rem">
+            <div class="row-actions">
+              <p:commandButton icon="pi pi-trash" title="Supprimer" styleClass="act act-danger"
+                               action="#{scheduleBean.delete(s)}" update="table :growl" process="@this">
+                <p:confirm header="Supprimer cet horaire ?" message="Cette action est définitive." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+            </div>
+          </p:column>
+        </p:dataTable>
+      </section>
+    </h:form>
+
+    <h:form id="dialogForm">
+      <p:dialog header="Nouvel horaire" widgetVar="dlg" modal="true" styleClass="dlg-sm" resizable="false"
+                draggable="false" responsive="true">
+        <p:messages id="dlgMessages" closable="true"/>
+        <div class="form-grid">
+          <div class="field">
+            <p:outputLabel for="day" value="Jour"/>
+            <p:selectOneMenu id="day" value="#{scheduleBean.form.dayOfWeek}">
+              <f:selectItems value="#{scheduleBean.days}" var="d" itemValue="#{d}" itemLabel="#{ui.label(d)}"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="time" value="Heure de départ"/>
+            <p:datePicker id="time" value="#{scheduleBean.form.departureTime}" timeOnly="true" pattern="HH:mm" showIcon="true"
+                          required="true" requiredMessage="L'heure de départ est obligatoire"/>
+          </div>
+        </div>
+        <f:facet name="footer">
+          <p:commandButton value="Annuler" type="button" styleClass="ui-button-flat" onclick="PF('dlg').hide()"/>
+          <p:commandButton value="Enregistrer" icon="pi pi-check" action="#{scheduleBean.save}"
+                           update="dlgMessages :listForm:table :growl"
+                           oncomplete="if (!args.validationFailed) PF('dlg').hide()"/>
+        </f:facet>
+      </p:dialog>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>

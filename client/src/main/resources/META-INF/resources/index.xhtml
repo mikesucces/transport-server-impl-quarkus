@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Tableau de bord"/>
+  <ui:param name="pageSubtitle" value="Vue d'ensemble de l'exploitation et points à surveiller"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton value="Actualiser" icon="pi pi-refresh" styleClass="btn-outline"
+                       action="#{dashboardBean.refresh}" update=":dashForm :growl"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="dashForm">
+
+      <!-- Indicateurs -->
+      <div class="kpis">
+        <div class="kpi">
+          <span class="card-icon tone-blue"><i class="pi pi-car"></i></span>
+          <div class="kpi-body">
+            <div class="kpi-label">Parc de cars</div>
+            <div class="kpi-value">#{dashboardBean.dashboard.fleetAlerts.vehiclesTotal}</div>
+            <div class="meter" title="Part du parc en service"><span style="width:#{dashboardBean.serviceRate}%"></span></div>
+            <div class="kpi-hint">#{dashboardBean.serviceRate} % en service · #{dashboardBean.dashboard.fleetAlerts.vehiclesInMaintenance} en entretien</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <span class="card-icon tone-green"><i class="pi pi-sync"></i></span>
+          <div class="kpi-body">
+            <div class="kpi-label">Rotations en cours</div>
+            <div class="kpi-value">#{dashboardBean.dashboard.activeRotationsCount}</div>
+            <div class="kpi-hint">#{dashboardBean.dashboard.todayRotations.size()} prévue(s) aujourd'hui</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <span class="card-icon tone-sky"><i class="pi pi-ticket"></i></span>
+          <div class="kpi-body">
+            <div class="kpi-label">Abonnements actifs</div>
+            <div class="kpi-value">#{dashboardBean.dashboard.activeSubscriptionsCount}</div>
+            <div class="kpi-hint">#{dashboardBean.dashboard.expiringSubscriptions.size()} proche(s) de l'échéance</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <span class="card-icon tone-amber"><i class="pi pi-wallet"></i></span>
+          <div class="kpi-body">
+            <div class="kpi-label">Revenu du mois</div>
+            <div class="kpi-value">#{ui.number(dashboardBean.dashboard.monthlyRevenue)}<small>FCFA</small></div>
+            <div class="kpi-hint">Encaissements depuis le 1er du mois</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <span class="card-icon #{dashboardBean.alertCount gt 0 ? 'tone-red' : 'tone-green'}">
+            <i class="pi #{dashboardBean.alertCount gt 0 ? 'pi-exclamation-triangle' : 'pi-check-circle'}"></i></span>
+          <div class="kpi-body">
+            <div class="kpi-label">Points à surveiller</div>
+            <div class="kpi-value">#{dashboardBean.alertCount}</div>
+            <div class="kpi-hint">#{dashboardBean.alertCount gt 0 ? 'Documents, permis, entretiens, abonnements' : 'Tout est en règle'}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rotations du jour + repartition du parc -->
+      <div class="grid cols-3-1">
+        <section class="card">
+          <div class="card-head">
+            <span class="card-icon tone-blue"><i class="pi pi-sync"></i></span>
+            <h2>Rotations du jour</h2>
+            <h:link outcome="/rotations" styleClass="hint">Voir tout</h:link>
+          </div>
+          <p:dataTable value="#{dashboardBean.dashboard.todayRotations}" var="r" rowKey="#{r.identifier}" reflow="true">
+            <f:facet name="emptyMessage">
+              <div class="empty-state"><i class="pi pi-calendar"></i><strong>Aucune rotation aujourd'hui</strong>
+                <span>Les rotations planifiées pour ce jour apparaîtront ici.</span></div>
+            </f:facet>
+            <p:column headerText="Horaire"><span class="mono">#{ui.hour(r.scheduledStart)}</span></p:column>
+            <p:column headerText="Ligne">
+              <strong>#{r.routeCode}</strong><span class="cell-sub">#{r.routeName}</span>
+            </p:column>
+            <p:column headerText="Chauffeur">#{r.driverFullName}</p:column>
+            <p:column headerText="Car"><span class="plate">#{r.plateNumber}</span></p:column>
+            <p:column headerText="Statut"><p:tag value="#{ui.label(r.status)}" severity="#{ui.severity(r.status)}"/></p:column>
+          </p:dataTable>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <span class="card-icon tone-green"><i class="pi pi-chart-pie"></i></span>
+            <h2>État du parc</h2>
+          </div>
+          <div class="chart-box">
+            <p:chart value="#{dashboardBean.fleetChart}" style="width:100%;height:100%"/>
+          </div>
+        </section>
+      </div>
+
+      <!-- A surveiller -->
+      <div class="grid cols-2">
+        <section class="card">
+          <div class="card-head">
+            <span class="card-icon tone-red"><i class="pi pi-file"></i></span>
+            <h2>Documents à renouveler</h2>
+            <span class="count-pill #{dashboardBean.dashboard.fleetAlerts.expiringDocuments.size() gt 0 ? 'danger' : ''}">#{dashboardBean.dashboard.fleetAlerts.expiringDocuments.size()}</span>
+          </div>
+          <ui:fragment rendered="#{empty dashboardBean.dashboard.fleetAlerts.expiringDocuments}">
+            <div class="empty-state"><i class="pi pi-check"></i><strong>Tous les documents sont à jour</strong></div>
+          </ui:fragment>
+          <ul class="alert-list">
+            <ui:repeat value="#{dashboardBean.dashboard.fleetAlerts.expiringDocuments}" var="d">
+              <li class="alert-item">
+                <span class="plate">#{d.plateNumber}</span>
+                <div class="grow"><strong>#{ui.label(d.docType)}</strong><small>Échéance le #{ui.date(d.expiresOn)}</small></div>
+                <p:tag value="#{d.expired ? 'Expiré' : ui.daysText(d.daysUntilExpiry)}"
+                       severity="#{d.expired ? 'danger' : ui.daysSeverity(d.daysUntilExpiry)}"/>
+              </li>
+            </ui:repeat>
+          </ul>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <span class="card-icon tone-amber"><i class="pi pi-id-card"></i></span>
+            <h2>Permis à renouveler</h2>
+            <span class="count-pill #{dashboardBean.dashboard.fleetAlerts.expiringLicenses.size() gt 0 ? 'warn' : ''}">#{dashboardBean.dashboard.fleetAlerts.expiringLicenses.size()}</span>
+          </div>
+          <ui:fragment rendered="#{empty dashboardBean.dashboard.fleetAlerts.expiringLicenses}">
+            <div class="empty-state"><i class="pi pi-check"></i><strong>Aucun permis à renouveler</strong></div>
+          </ui:fragment>
+          <ul class="alert-list">
+            <ui:repeat value="#{dashboardBean.dashboard.fleetAlerts.expiringLicenses}" var="l">
+              <li class="alert-item">
+                <span class="avatar">#{ui.initials(l.fullName)}</span>
+                <div class="grow"><strong>#{l.fullName}</strong><small>Permis #{l.licenseNumber}</small></div>
+                <p:tag value="#{ui.daysText(l.daysUntilLicenseExpiry)}" severity="#{ui.daysSeverity(l.daysUntilLicenseExpiry)}"/>
+              </li>
+            </ui:repeat>
+          </ul>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <span class="card-icon tone-sky"><i class="pi pi-wrench"></i></span>
+            <h2>Entretiens à venir</h2>
+            <span class="count-pill">#{dashboardBean.dashboard.fleetAlerts.upcomingMaintenances.size()}</span>
+          </div>
+          <ui:fragment rendered="#{empty dashboardBean.dashboard.fleetAlerts.upcomingMaintenances}">
+            <div class="empty-state"><i class="pi pi-check"></i><strong>Aucun entretien prévu</strong></div>
+          </ui:fragment>
+          <ul class="alert-list">
+            <ui:repeat value="#{dashboardBean.dashboard.fleetAlerts.upcomingMaintenances}" var="m">
+              <li class="alert-item">
+                <span class="plate">#{m.plateNumber}</span>
+                <div class="grow"><strong>#{ui.label(m.maintenanceType)}</strong><small>Prévu le #{ui.date(m.scheduledOn)}</small></div>
+                <p:tag value="#{ui.label(m.status)}" severity="#{ui.severity(m.status)}"/>
+              </li>
+            </ui:repeat>
+          </ul>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <span class="card-icon tone-blue"><i class="pi pi-ticket"></i></span>
+            <h2>Abonnements bientôt expirés</h2>
+            <span class="count-pill #{dashboardBean.dashboard.expiringSubscriptions.size() gt 0 ? 'warn' : ''}">#{dashboardBean.dashboard.expiringSubscriptions.size()}</span>
+          </div>
+          <ui:fragment rendered="#{empty dashboardBean.dashboard.expiringSubscriptions}">
+            <div class="empty-state"><i class="pi pi-check"></i><strong>Aucun abonnement proche de l'échéance</strong></div>
+          </ui:fragment>
+          <ul class="alert-list">
+            <ui:repeat value="#{dashboardBean.dashboard.expiringSubscriptions}" var="s">
+              <li class="alert-item">
+                <span class="avatar">#{ui.initials(s.passengerFullName)}</span>
+                <div class="grow"><strong>#{s.passengerFullName}</strong><small>Formule #{ui.label(s.plan).toLowerCase()} · fin le #{ui.date(s.endsOn)}</small></div>
+                <p:tag value="#{ui.daysText(s.daysRemaining)}" severity="#{ui.daysSeverity(s.daysRemaining)}"/>
+              </li>
+            </ui:repeat>
+          </ul>
+        </section>
+      </div>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>

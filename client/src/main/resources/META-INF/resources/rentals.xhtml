@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Locations"/>
+  <ui:param name="pageSubtitle" value="Locations de cars : réservations, départs et retours"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton value="Nouvelle location" icon="pi pi-plus" action="#{rentalBean.prepareCreate}"
+                       update=":dialogForm" oncomplete="PF('dlg').show()" process="@this"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="listForm">
+      <section class="card">
+        <div class="toolbar">
+          <span class="search"><i class="pi pi-search"></i>
+            <p:inputText id="q" value="#{rentalBean.search}" placeholder="Rechercher un usager ou une immatriculation…">
+              <p:ajax event="keyup" delay="300" update="table count"/>
+            </p:inputText>
+          </span>
+          <p:selectOneMenu value="#{rentalBean.statusFilter}">
+            <f:selectItem itemLabel="Tous les statuts" itemValue=""/>
+            <f:selectItems value="#{rentalBean.statuses}" var="s" itemValue="#{s}" itemLabel="#{ui.label(s)}"/>
+            <p:ajax update="table count"/>
+          </p:selectOneMenu>
+          <span class="grow"></span>
+          <h:outputText id="count" styleClass="result-count" value="#{rentalBean.filteredCount} sur #{rentalBean.total} locations"/>
+        </div>
+
+        <p:dataTable id="table" value="#{rentalBean.filtered}" var="r" rowKey="#{r.identifier}"
+                     paginator="true" rows="10" paginatorAlwaysVisible="false" paginatorPosition="bottom" reflow="true">
+          <f:facet name="emptyMessage">
+            <div class="empty-state"><i class="pi pi-key"></i><strong>Aucune location trouvée</strong>
+              <span>Modifiez votre recherche ou créez une location.</span></div>
+          </f:facet>
+          <p:column headerText="Usager" sortBy="#{r.passengerFullName}">
+            <div class="cell-person"><span class="avatar">#{ui.initials(r.passengerFullName)}</span>
+              <div><strong>#{r.passengerFullName}</strong></div></div>
+          </p:column>
+          <p:column headerText="Car" sortBy="#{r.plateNumber}"><span class="plate">#{r.plateNumber}</span></p:column>
+          <p:column headerText="Période" sortBy="#{r.startDate}">
+            <span class="mono">#{ui.date(r.startDate)} → #{ui.date(r.endDate)}</span>
+          </p:column>
+          <p:column headerText="Montant" sortBy="#{r.totalAmount}">
+            <span class="amount">#{ui.money(r.totalAmount)}</span>
+            <span class="cell-sub" style="#{empty r.depositAmount ? 'display:none' : ''}">Caution #{ui.money(r.depositAmount)}</span>
+          </p:column>
+          <p:column headerText="Statut" sortBy="#{r.status}">
+            <p:tag value="#{ui.label(r.status)}" severity="#{ui.severity(r.status)}"/>
+          </p:column>
+          <p:column headerText="" style="width:10rem">
+            <div class="row-actions">
+              <p:commandButton icon="pi pi-play" title="Démarrer" styleClass="act act-ok"
+                               rendered="#{r.status eq 'RESERVEE'}"
+                               action="#{rentalBean.changeStatus(r, 'EN_COURS')}" update="table count :growl" process="@this"/>
+              <p:commandButton icon="pi pi-check" title="Terminer" styleClass="act act-ok"
+                               rendered="#{r.status eq 'EN_COURS'}"
+                               action="#{rentalBean.changeStatus(r, 'TERMINEE')}" update="table count :growl" process="@this"/>
+              <p:commandButton icon="pi pi-times-circle" title="Annuler" styleClass="act act-warn"
+                               rendered="#{r.status eq 'RESERVEE' or r.status eq 'EN_COURS'}"
+                               action="#{rentalBean.changeStatus(r, 'ANNULEE')}" update="table count :growl" process="@this">
+                <p:confirm header="Annuler cette location ?" message="La location de #{r.plateNumber} sera annulée." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+              <p:commandButton icon="pi pi-trash" title="Supprimer" styleClass="act act-danger"
+                               action="#{rentalBean.delete(r)}" update="table count :growl" process="@this">
+                <p:confirm header="Supprimer cette location ?" message="Cette action est définitive." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+            </div>
+          </p:column>
+        </p:dataTable>
+      </section>
+    </h:form>
+
+    <h:form id="dialogForm">
+      <p:dialog header="Nouvelle location" widgetVar="dlg" modal="true" styleClass="dlg-lg" resizable="false"
+                draggable="false" responsive="true">
+        <p:messages id="dlgMessages" closable="true"/>
+        <div class="form-grid">
+          <div class="field">
+            <p:outputLabel for="pax" value="Usager"/>
+            <p:selectOneMenu id="pax" value="#{rentalBean.passengerId}" required="true"
+                             requiredMessage="L'usager est obligatoire" filter="true" filterMatchMode="contains">
+              <f:selectItem itemLabel="Choisir un usager…" itemValue="" noSelectionOption="true"/>
+              <f:selectItems value="#{rentalBean.passengers}" var="pp"
+                             itemValue="#{pp.identifier.toString()}" itemLabel="#{pp.fullName} (#{pp.phone})"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="veh" value="Car"/>
+            <p:selectOneMenu id="veh" value="#{rentalBean.vehicleId}" required="true"
+                             requiredMessage="Le véhicule est obligatoire" filter="true" filterMatchMode="contains">
+              <f:selectItem itemLabel="Choisir un car…" itemValue="" noSelectionOption="true"/>
+              <f:selectItems value="#{rentalBean.vehicles}" var="v"
+                             itemValue="#{v.identifier.toString()}" itemLabel="#{v.plateNumber} (#{ui.label(v.status)})"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="from" value="Du"/>
+            <p:datePicker id="from" value="#{rentalBean.form.startDate}" pattern="dd/MM/yyyy" showIcon="true"
+                          required="true" requiredMessage="La date de début est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="to" value="Au"/>
+            <p:datePicker id="to" value="#{rentalBean.form.endDate}" pattern="dd/MM/yyyy" showIcon="true"
+                          required="true" requiredMessage="La date de fin est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="total" value="Montant total (FCFA)"/>
+            <p:inputNumber id="total" value="#{rentalBean.form.totalAmount}" decimalPlaces="0" minValue="0" thousandSeparator=" "
+                           required="true" requiredMessage="Le montant total est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="dep" value="Caution (FCFA)"/>
+            <p:inputNumber id="dep" value="#{rentalBean.form.depositAmount}" decimalPlaces="0" minValue="0" thousandSeparator=" "/>
+          </div>
+          <div class="field full">
+            <p:outputLabel for="notes" value="Notes"/>
+            <p:inputTextarea id="notes" value="#{rentalBean.form.notes}" rows="3"/>
+          </div>
+        </div>
+        <f:facet name="footer">
+          <p:commandButton value="Annuler" type="button" styleClass="ui-button-flat" onclick="PF('dlg').hide()"/>
+          <p:commandButton value="Enregistrer" icon="pi pi-check" action="#{rentalBean.save}"
+                           update="dlgMessages :listForm :growl"
+                           oncomplete="if (!args.validationFailed) PF('dlg').hide()"/>
+        </f:facet>
+      </p:dialog>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>

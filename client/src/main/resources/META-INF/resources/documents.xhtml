@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Documents des cars"/>
+  <ui:param name="pageSubtitle" value="Assurance, visite technique, carte grise : suivez les échéances de chaque car"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton id="addBtn" value="Nouveau document" icon="pi pi-plus" action="#{documentBean.prepareCreate}"
+                       disabled="#{not documentBean.vehicleSelected}"
+                       update=":dialogForm" oncomplete="PF('dlg').show()" process="@this"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="listForm">
+      <section class="card">
+        <div class="picker">
+          <p:outputLabel for="veh" value="Car"/>
+          <p:selectOneMenu id="veh" value="#{documentBean.vehicleId}" filter="true" filterMatchMode="contains" style="min-width:320px">
+            <f:selectItem itemLabel="Choisir un car…" itemValue="" noSelectionOption="true"/>
+            <f:selectItems value="#{documentBean.vehicles}" var="v"
+                           itemValue="#{v.identifier.toString()}" itemLabel="#{v.plateNumber} · #{v.brand} #{v.model}"/>
+            <p:ajax listener="#{documentBean.load}" update="table :actionsForm :growl"/>
+          </p:selectOneMenu>
+        </div>
+
+        <p:dataTable id="table" value="#{documentBean.documents}" var="d" rowKey="#{d.identifier}" reflow="true">
+          <f:facet name="emptyMessage">
+            <div class="empty-state"><i class="pi pi-file"></i>
+              <strong>#{documentBean.vehicleSelected ? 'Aucun document pour ce car' : 'Sélectionnez un car'}</strong>
+              <span>#{documentBean.vehicleSelected ? 'Ajoutez son assurance, sa visite technique…' : 'Choisissez un car pour consulter ses documents.'}</span></div>
+          </f:facet>
+          <p:column headerText="Document" sortBy="#{d.docType}"><strong>#{ui.label(d.docType)}</strong>
+            <span class="cell-sub">#{d.reference}</span></p:column>
+          <p:column headerText="Émetteur">#{empty d.issuer ? '—' : d.issuer}</p:column>
+          <p:column headerText="Émis le"><span class="mono">#{ui.date(d.issuedOn)}</span></p:column>
+          <p:column headerText="Expire le" sortBy="#{d.expiresOn}"><span class="mono">#{ui.date(d.expiresOn)}</span></p:column>
+          <p:column headerText="État">
+            <p:tag value="Expiré" severity="danger" rendered="#{d.expired}"/>
+            <p:tag value="#{ui.daysText(d.daysUntilExpiry)}" severity="#{ui.daysSeverity(d.daysUntilExpiry)}" rendered="#{not d.expired}"/>
+          </p:column>
+          <p:column headerText="" style="width:5rem">
+            <div class="row-actions">
+              <p:commandButton icon="pi pi-trash" title="Supprimer" styleClass="act act-danger"
+                               action="#{documentBean.delete(d)}" update="table :growl" process="@this">
+                <p:confirm header="Supprimer ce document ?" message="Cette action est définitive." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+            </div>
+          </p:column>
+        </p:dataTable>
+      </section>
+    </h:form>
+
+    <h:form id="dialogForm">
+      <p:dialog header="Nouveau document" widgetVar="dlg" modal="true" styleClass="dlg-md" resizable="false"
+                draggable="false" responsive="true">
+        <p:messages id="dlgMessages" closable="true"/>
+        <div class="form-grid">
+          <div class="field">
+            <p:outputLabel for="type" value="Type de document"/>
+            <p:selectOneMenu id="type" value="#{documentBean.form.docType}">
+              <f:selectItems value="#{documentBean.types}" var="t" itemValue="#{t}" itemLabel="#{ui.label(t)}"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="ref" value="Référence"/>
+            <p:inputText id="ref" value="#{documentBean.form.reference}"/>
+          </div>
+          <div class="field full">
+            <p:outputLabel for="iss" value="Émetteur"/>
+            <p:inputText id="iss" value="#{documentBean.form.issuer}" placeholder="ex. compagnie d'assurance"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="on" value="Date d'émission"/>
+            <p:datePicker id="on" value="#{documentBean.form.issuedOn}" pattern="dd/MM/yyyy" showIcon="true"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="exp" value="Date d'expiration"/>
+            <p:datePicker id="exp" value="#{documentBean.form.expiresOn}" pattern="dd/MM/yyyy" showIcon="true"
+                          required="true" requiredMessage="La date d'expiration est obligatoire"/>
+          </div>
+        </div>
+        <f:facet name="footer">
+          <p:commandButton value="Annuler" type="button" styleClass="ui-button-flat" onclick="PF('dlg').hide()"/>
+          <p:commandButton value="Enregistrer" icon="pi pi-check" action="#{documentBean.save}"
+                           update="dlgMessages :listForm:table :growl"
+                           oncomplete="if (!args.validationFailed) PF('dlg').hide()"/>
+        </f:facet>
+      </p:dialog>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>

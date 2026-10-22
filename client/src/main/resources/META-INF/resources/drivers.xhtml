@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Chauffeurs"/>
+  <ui:param name="pageSubtitle" value="Équipe de conduite : permis, rémunération et disponibilité"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton value="Nouveau chauffeur" icon="pi pi-plus" action="#{driverBean.prepareCreate}"
+                       update=":dialogForm" oncomplete="PF('dlg').show()" process="@this"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="listForm">
+      <section class="card">
+        <div class="toolbar">
+          <span class="search"><i class="pi pi-search"></i>
+            <p:inputText id="q" value="#{driverBean.search}" placeholder="Rechercher un nom, un téléphone, un permis…">
+              <p:ajax event="keyup" delay="300" update="table count"/>
+            </p:inputText>
+          </span>
+          <p:selectOneMenu value="#{driverBean.statusFilter}">
+            <f:selectItem itemLabel="Tous les statuts" itemValue=""/>
+            <f:selectItems value="#{driverBean.statuses}" var="s" itemValue="#{s}" itemLabel="#{ui.label(s)}"/>
+            <p:ajax update="table count"/>
+          </p:selectOneMenu>
+          <span class="grow"></span>
+          <h:outputText id="count" styleClass="result-count" value="#{driverBean.filteredCount} sur #{driverBean.total} chauffeurs"/>
+        </div>
+
+        <p:dataTable id="table" value="#{driverBean.filtered}" var="d" rowKey="#{d.identifier}"
+                     paginator="true" rows="10" paginatorAlwaysVisible="false" paginatorPosition="bottom" reflow="true">
+          <f:facet name="emptyMessage">
+            <div class="empty-state"><i class="pi pi-id-card"></i><strong>Aucun chauffeur trouvé</strong>
+              <span>Modifiez votre recherche ou ajoutez un chauffeur.</span></div>
+          </f:facet>
+          <p:column headerText="Chauffeur" sortBy="#{d.fullName}">
+            <div class="cell-person"><span class="avatar">#{ui.initials(d.fullName)}</span>
+              <div><strong>#{d.fullName}</strong><small>#{d.phone}</small></div></div>
+          </p:column>
+          <p:column headerText="Permis">
+            <span class="mono">#{d.licenseNumber}</span>
+            <span class="cell-sub">Catégorie #{empty d.licenseCategory ? '—' : d.licenseCategory}</span>
+          </p:column>
+          <p:column headerText="Validité du permis" sortBy="#{d.licenseExpiresOn}">
+            <span class="mono">#{ui.date(d.licenseExpiresOn)}</span>
+            <p:tag value="#{ui.daysText(d.daysUntilLicenseExpiry)}" severity="#{ui.daysSeverity(d.daysUntilLicenseExpiry)}"
+                   rendered="#{d.daysUntilLicenseExpiry le 30}"/>
+          </p:column>
+          <p:column headerText="Rémunération">
+            #{ui.label(d.remunerationType)}
+            <span class="cell-sub">
+              <h:outputText value="#{ui.money(d.monthlySalary)} / mois" rendered="#{d.remunerationType eq 'FIXE'}"/>
+              <h:outputText value="#{ui.money(d.tripRate)} / trajet" rendered="#{d.remunerationType eq 'PAR_TRAJET'}"/>
+              <h:outputText value="#{d.commissionRate} %" rendered="#{d.remunerationType eq 'COMMISSION'}"/>
+            </span>
+          </p:column>
+          <p:column headerText="Statut" sortBy="#{d.status}">
+            <p:tag value="#{ui.label(d.status)}" severity="#{ui.severity(d.status)}"/>
+          </p:column>
+          <p:column headerText="" style="width:7rem">
+            <div class="row-actions">
+              <p:commandButton icon="pi pi-pencil" title="Modifier" styleClass="act act-brand"
+                               action="#{driverBean.prepareEdit(d)}" update=":dialogForm"
+                               oncomplete="PF('dlg').show()" process="@this"/>
+              <p:commandButton icon="pi pi-trash" title="Supprimer" styleClass="act act-danger"
+                               action="#{driverBean.delete(d)}" update="table count :growl" process="@this">
+                <p:confirm header="Supprimer ce chauffeur ?" message="#{d.fullName} sera définitivement supprimé." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+            </div>
+          </p:column>
+        </p:dataTable>
+      </section>
+    </h:form>
+
+    <h:form id="dialogForm">
+      <p:dialog header="#{driverBean.editing ? 'Modifier le chauffeur' : 'Nouveau chauffeur'}" widgetVar="dlg"
+                modal="true" styleClass="dlg-lg" resizable="false" draggable="false" responsive="true">
+        <p:messages id="dlgMessages" closable="true"/>
+        <div class="form-grid">
+          <div class="form-section">Identité</div>
+          <div class="field">
+            <p:outputLabel for="name" value="Nom complet"/>
+            <p:inputText id="name" value="#{driverBean.form.fullName}" required="true" requiredMessage="Le nom est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="phone" value="Téléphone"/>
+            <p:inputText id="phone" value="#{driverBean.form.phone}" required="true" requiredMessage="Le téléphone est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="mat" value="Matricule"/>
+            <p:inputText id="mat" value="#{driverBean.form.matricule}"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="hired" value="Date d'embauche"/>
+            <p:datePicker id="hired" value="#{driverBean.form.hiredOn}" pattern="dd/MM/yyyy" showIcon="true"/>
+          </div>
+
+          <div class="form-section">Permis de conduire</div>
+          <div class="field">
+            <p:outputLabel for="lic" value="Numéro de permis"/>
+            <p:inputText id="lic" value="#{driverBean.form.licenseNumber}" required="true" requiredMessage="Le numéro de permis est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="cat" value="Catégorie"/>
+            <p:inputText id="cat" value="#{driverBean.form.licenseCategory}" placeholder="ex. D"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="exp" value="Date d'expiration"/>
+            <p:datePicker id="exp" value="#{driverBean.form.licenseExpiresOn}" pattern="dd/MM/yyyy" showIcon="true"
+                          required="true" requiredMessage="La date d'expiration du permis est obligatoire"/>
+          </div>
+
+          <div class="form-section">Rémunération et statut</div>
+          <div class="field">
+            <p:outputLabel for="rem" value="Type de rémunération"/>
+            <p:selectOneMenu id="rem" value="#{driverBean.form.remunerationType}">
+              <f:selectItems value="#{driverBean.remunerations}" var="r" itemValue="#{r}" itemLabel="#{ui.label(r)}"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="st" value="Statut"/>
+            <p:selectOneMenu id="st" value="#{driverBean.form.status}">
+              <f:selectItems value="#{driverBean.statuses}" var="s" itemValue="#{s}" itemLabel="#{ui.label(s)}"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field">
+            <p:outputLabel for="sal" value="Salaire mensuel (FCFA)"/>
+            <p:inputNumber id="sal" value="#{driverBean.form.monthlySalary}" decimalPlaces="0" minValue="0" thousandSeparator=" "/>
+            <span class="help">Requis pour une rémunération fixe.</span>
+          </div>
+          <div class="field">
+            <p:outputLabel for="trip" value="Tarif par trajet (FCFA)"/>
+            <p:inputNumber id="trip" value="#{driverBean.form.tripRate}" decimalPlaces="0" minValue="0" thousandSeparator=" "/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="com" value="Commission (%)"/>
+            <p:inputNumber id="com" value="#{driverBean.form.commissionRate}" decimalPlaces="2" minValue="0" maxValue="100"/>
+          </div>
+        </div>
+        <f:facet name="footer">
+          <p:commandButton value="Annuler" type="button" styleClass="ui-button-flat" onclick="PF('dlg').hide()"/>
+          <p:commandButton value="Enregistrer" icon="pi pi-check" action="#{driverBean.save}"
+                           update="dlgMessages :listForm :growl"
+                           oncomplete="if (!args.validationFailed) PF('dlg').hide()"/>
+        </f:facet>
+      </p:dialog>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>

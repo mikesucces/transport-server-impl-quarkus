@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Lignes"/>
+  <ui:param name="pageSubtitle" value="Les lignes régulières desservies, leur trajet et leur état"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton value="Nouvelle ligne" icon="pi pi-plus" action="#{routeBean.prepareCreate}"
+                       update=":dialogForm" oncomplete="PF('dlg').show()" process="@this"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="listForm">
+      <section class="card">
+        <div class="toolbar">
+          <span class="search"><i class="pi pi-search"></i>
+            <p:inputText id="q" value="#{routeBean.search}" placeholder="Rechercher un code, un nom, une ville…">
+              <p:ajax event="keyup" delay="300" update="table count"/>
+            </p:inputText>
+          </span>
+          <p:selectOneMenu value="#{routeBean.statusFilter}">
+            <f:selectItem itemLabel="Tous les statuts" itemValue=""/>
+            <f:selectItems value="#{routeBean.statuses}" var="s" itemValue="#{s}" itemLabel="#{ui.labelF(s)}"/>
+            <p:ajax update="table count"/>
+          </p:selectOneMenu>
+          <span class="grow"></span>
+          <h:outputText id="count" styleClass="result-count" value="#{routeBean.filteredCount} sur #{routeBean.total} lignes"/>
+        </div>
+
+        <p:dataTable id="table" value="#{routeBean.filtered}" var="r" rowKey="#{r.identifier}"
+                     paginator="true" rows="10" paginatorAlwaysVisible="false" paginatorPosition="bottom" reflow="true">
+          <f:facet name="emptyMessage">
+            <div class="empty-state"><i class="pi pi-map"></i><strong>Aucune ligne trouvée</strong>
+              <span>Modifiez votre recherche ou créez une ligne.</span></div>
+          </f:facet>
+          <p:column headerText="Ligne" sortBy="#{r.code}">
+            <span class="plate">#{r.code}</span>
+            <span class="cell-sub">#{r.name}</span>
+          </p:column>
+          <p:column headerText="Trajet">
+            <strong>#{r.origin}</strong> <i class="pi pi-arrow-right muted" style="font-size:.8rem"></i> <strong>#{r.destination}</strong>
+          </p:column>
+          <p:column headerText="Distance" sortBy="#{r.distanceKm}"><span class="mono">#{ui.number(r.distanceKm)} km</span></p:column>
+          <p:column headerText="Statut" sortBy="#{r.status}">
+            <p:tag value="#{ui.labelF(r.status)}" severity="#{ui.severity(r.status)}"/>
+          </p:column>
+          <p:column headerText="" style="width:9rem">
+            <div class="row-actions">
+              <p:commandButton icon="pi pi-pencil" title="Modifier" styleClass="act act-brand"
+                               action="#{routeBean.prepareEdit(r)}" update=":dialogForm"
+                               oncomplete="PF('dlg').show()" process="@this"/>
+              <p:commandButton icon="#{r.status eq 'ACTIVE' ? 'pi pi-pause' : 'pi pi-play'}"
+                               title="#{r.status eq 'ACTIVE' ? 'Suspendre la ligne' : 'Réactiver la ligne'}" styleClass="act act-warn"
+                               action="#{routeBean.toggleStatus(r)}" update="table count :growl" process="@this"/>
+              <p:commandButton icon="pi pi-trash" title="Supprimer" styleClass="act act-danger"
+                               action="#{routeBean.delete(r)}" update="table count :growl" process="@this">
+                <p:confirm header="Supprimer cette ligne ?" message="La ligne #{r.code} sera définitivement supprimée." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+            </div>
+          </p:column>
+        </p:dataTable>
+      </section>
+    </h:form>
+
+    <h:form id="dialogForm">
+      <p:dialog header="#{routeBean.editing ? 'Modifier la ligne' : 'Nouvelle ligne'}" widgetVar="dlg"
+                modal="true" styleClass="dlg-md" resizable="false" draggable="false" responsive="true">
+        <p:messages id="dlgMessages" closable="true"/>
+        <div class="form-grid">
+          <div class="field">
+            <p:outputLabel for="code" value="Code"/>
+            <p:inputText id="code" value="#{routeBean.form.code}" required="true" requiredMessage="Le code est obligatoire" placeholder="ex. L01"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="st" value="Statut"/>
+            <p:selectOneMenu id="st" value="#{routeBean.form.status}">
+              <f:selectItems value="#{routeBean.statuses}" var="s" itemValue="#{s}" itemLabel="#{ui.labelF(s)}"/>
+            </p:selectOneMenu>
+          </div>
+          <div class="field full">
+            <p:outputLabel for="name" value="Nom de la ligne"/>
+            <p:inputText id="name" value="#{routeBean.form.name}" required="true" requiredMessage="Le nom est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="org" value="Origine"/>
+            <p:inputText id="org" value="#{routeBean.form.origin}" required="true" requiredMessage="L'origine est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="dst" value="Destination"/>
+            <p:inputText id="dst" value="#{routeBean.form.destination}" required="true" requiredMessage="La destination est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="km" value="Distance (km)"/>
+            <p:inputNumber id="km" value="#{routeBean.form.distanceKm}" decimalPlaces="0" minValue="0"/>
+          </div>
+        </div>
+        <f:facet name="footer">
+          <p:commandButton value="Annuler" type="button" styleClass="ui-button-flat" onclick="PF('dlg').hide()"/>
+          <p:commandButton value="Enregistrer" icon="pi pi-check" action="#{routeBean.save}"
+                           update="dlgMessages :listForm :growl"
+                           oncomplete="if (!args.validationFailed) PF('dlg').hide()"/>
+        </f:facet>
+      </p:dialog>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>

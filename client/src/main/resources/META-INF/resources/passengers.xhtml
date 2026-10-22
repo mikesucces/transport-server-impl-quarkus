@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Usagers"/>
+  <ui:param name="pageSubtitle" value="Les voyageurs inscrits et l'état de leur compte"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton value="Nouvel usager" icon="pi pi-plus" action="#{passengerBean.prepareCreate}"
+                       update=":dialogForm" oncomplete="PF('dlg').show()" process="@this"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="listForm">
+      <section class="card">
+        <div class="toolbar">
+          <span class="search"><i class="pi pi-search"></i>
+            <p:inputText id="q" value="#{passengerBean.search}" placeholder="Rechercher un nom ou un téléphone…">
+              <p:ajax event="keyup" delay="300" update="table count"/>
+            </p:inputText>
+          </span>
+          <p:selectOneMenu value="#{passengerBean.statusFilter}">
+            <f:selectItem itemLabel="Tous les statuts" itemValue=""/>
+            <f:selectItems value="#{passengerBean.statuses}" var="s" itemValue="#{s}" itemLabel="#{ui.label(s)}"/>
+            <p:ajax update="table count"/>
+          </p:selectOneMenu>
+          <span class="grow"></span>
+          <h:outputText id="count" styleClass="result-count" value="#{passengerBean.filteredCount} sur #{passengerBean.total} usagers"/>
+        </div>
+
+        <p:dataTable id="table" value="#{passengerBean.filtered}" var="p" rowKey="#{p.identifier}"
+                     paginator="true" rows="10" paginatorAlwaysVisible="false" paginatorPosition="bottom" reflow="true">
+          <f:facet name="emptyMessage">
+            <div class="empty-state"><i class="pi pi-users"></i><strong>Aucun usager trouvé</strong>
+              <span>Modifiez votre recherche ou ajoutez un usager.</span></div>
+          </f:facet>
+          <p:column headerText="Usager" sortBy="#{p.fullName}">
+            <div class="cell-person"><span class="avatar">#{ui.initials(p.fullName)}</span>
+              <div><strong>#{p.fullName}</strong></div></div>
+          </p:column>
+          <p:column headerText="Téléphone"><span class="mono">#{p.phone}</span></p:column>
+          <p:column headerText="Statut" sortBy="#{p.status}">
+            <p:tag value="#{ui.label(p.status)}" severity="#{ui.severity(p.status)}"/>
+          </p:column>
+          <p:column headerText="" style="width:9rem">
+            <div class="row-actions">
+              <p:commandButton icon="pi pi-pencil" title="Modifier" styleClass="act act-brand"
+                               action="#{passengerBean.prepareEdit(p)}" update=":dialogForm"
+                               oncomplete="PF('dlg').show()" process="@this"/>
+              <p:commandButton icon="pi pi-ban" title="Suspendre" styleClass="act act-warn"
+                               rendered="#{p.status eq 'ACTIVE'}"
+                               action="#{passengerBean.changeStatus(p, 'SUSPENDED')}" update="table count :growl" process="@this"/>
+              <p:commandButton icon="pi pi-check-circle" title="Réactiver" styleClass="act act-ok"
+                               rendered="#{p.status ne 'ACTIVE'}"
+                               action="#{passengerBean.changeStatus(p, 'ACTIVE')}" update="table count :growl" process="@this"/>
+              <p:commandButton icon="pi pi-trash" title="Supprimer" styleClass="act act-danger"
+                               action="#{passengerBean.delete(p)}" update="table count :growl" process="@this">
+                <p:confirm header="Supprimer cet usager ?" message="#{p.fullName} sera définitivement supprimé." icon="pi pi-exclamation-triangle"/>
+              </p:commandButton>
+            </div>
+          </p:column>
+        </p:dataTable>
+      </section>
+    </h:form>
+
+    <h:form id="dialogForm">
+      <p:dialog header="#{passengerBean.editing ? 'Modifier l’usager' : 'Nouvel usager'}" widgetVar="dlg"
+                modal="true" styleClass="dlg-md" resizable="false" draggable="false" responsive="true">
+        <p:messages id="dlgMessages" closable="true"/>
+        <div class="form-grid">
+          <div class="field full">
+            <p:outputLabel for="name" value="Nom complet"/>
+            <p:inputText id="name" value="#{passengerBean.form.fullName}" required="true" requiredMessage="Le nom est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="phone" value="Téléphone"/>
+            <p:inputText id="phone" value="#{passengerBean.form.phone}" required="true" requiredMessage="Le téléphone est obligatoire"/>
+          </div>
+          <div class="field">
+            <p:outputLabel for="st" value="Statut"/>
+            <p:selectOneMenu id="st" value="#{passengerBean.form.status}">
+              <f:selectItems value="#{passengerBean.statuses}" var="s" itemValue="#{s}" itemLabel="#{ui.label(s)}"/>
+            </p:selectOneMenu>
+          </div>
+        </div>
+        <f:facet name="footer">
+          <p:commandButton value="Annuler" type="button" styleClass="ui-button-flat" onclick="PF('dlg').hide()"/>
+          <p:commandButton value="Enregistrer" icon="pi pi-check" action="#{passengerBean.save}"
+                           update="dlgMessages :listForm :growl"
+                           oncomplete="if (!args.validationFailed) PF('dlg').hide()"/>
+        </f:facet>
+      </p:dialog>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>
