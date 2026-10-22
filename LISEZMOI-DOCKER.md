@@ -31,6 +31,9 @@ Pour repartir de zéro (base remise aux données de démonstration) : ajouter `-
 
 ## Comptes de test (realm Keycloak `transit`)
 
+La configuration complète de Keycloak (realm, rôles, clients, adresses, dépannage) est décrite dans
+[`docs/KEYCLOAK.md`](docs/KEYCLOAK.md).
+
 Mot de passe commun : `Transit2026!`
 
 | Utilisateur | Rôle | Usage prévu |

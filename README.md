@@ -1,4 +1,8 @@
 # transport-server-impl-quarkus
+
+> Vue d'ensemble de la plateforme complète (API, administration web, Keycloak, Docker) : voir [`PLATEFORME.md`](PLATEFORME.md).
+> Configuration de Keycloak : [`docs/KEYCLOAK.md`](docs/KEYCLOAK.md).
+
 Gestion des transports du personnel
 
 API REST (Quarkus) exposant le référentiel flotte (véhicules, chauffeurs, documents, entretiens) et le module identité usagers (usagers, codes d'accès, historique de connexions).
