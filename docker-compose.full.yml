@@ -1,0 +1,136 @@
+# ==========================================================================
+# Plateforme Transit complete : base de donnees, Keycloak, API et administration.
+#
+#   docker compose -f docker-compose.full.yml up --build   (premier lancement : 5 a 10 minutes)
+#
+#   Administration : http://localhost:8081   (admin / Transit2026!)
+#   API            : http://localhost:8080/api   (Swagger : http://localhost:8080/swagger-ui/)
+#   Keycloak       : http://localhost:8180   (console : admin / admin)
+#   PostgreSQL     : localhost:5432   (base transit, utilisateur transit)
+#
+# Les donnees de demonstration sont creees automatiquement (migrations Flyway).
+# Voir LISEZMOI-DOCKER.md pour le detail.
+# (docker-compose.yml, lui, ne lance que l'API + la base, sans securite : voir README.md)
+# ==========================================================================
+name: transit
+
+services:
+
+  # ---------- Base de donnees ----------
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: transit
+      POSTGRES_USER: transit
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-transit}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - transit_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U transit -d transit"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # ---------- Authentification ----------
+  # Le realm "transit" (roles, clients, utilisateurs) est importe au premier demarrage.
+  # KC_HOSTNAME = adresse vue par le navigateur ; les appels entre conteneurs passent par
+  # keycloak:8080 (KC_HOSTNAME_BACKCHANNEL_DYNAMIC), le jeton garde donc un emetteur unique.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./keycloak/realm-transit.json:/opt/keycloak/data/import/realm-transit.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+    restart: unless-stopped
+
+  # ---------- API (Quarkus) ----------
+  # OIDC_ENABLED est lu a la COMPILATION : l'image est donc construite avec la securite active.
+  api:
+    build:
+      context: .
+      args:
+        OIDC_ENABLED: "true"
+      dockerfile_inline: |
+        FROM maven:3.9-eclipse-temurin-21 AS build
+        WORKDIR /build
+        ARG OIDC_ENABLED=true
+        COPY pom.xml .
+        COPY src ./src
+        RUN --mount=type=cache,target=/root/.m2 \
+            OIDC_ENABLED=$${OIDC_ENABLED} mvn -q -B -DskipTests package
+
+        FROM eclipse-temurin:21-jre-jammy
+        WORKDIR /app
+        COPY --from=build /build/target/quarkus-app/ ./
+        EXPOSE 8080
+        ENTRYPOINT ["java", "-Dquarkus.http.host=0.0.0.0", "-jar", "quarkus-run.jar"]
+    depends_on:
+      db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/transit
+      DB_USER: transit
+      DB_PASSWORD: ${DB_PASSWORD:-transit}
+      KEYCLOAK_URL: http://keycloak:8080/realms/transit
+      CORS_ORIGINS: http://localhost:8081,http://localhost:3000,http://localhost:5173
+      DEV_BYPASS_ROLES: "false"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8080/api/q/health/ready >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    restart: unless-stopped
+
+  # ---------- Administration web (Quarkus + PrimeFaces) ----------
+  admin:
+    build:
+      context: ./client
+      dockerfile_inline: |
+        FROM maven:3.9-eclipse-temurin-21 AS build
+        WORKDIR /build
+        COPY pom.xml .
+        COPY src ./src
+        RUN --mount=type=cache,target=/root/.m2 mvn -q -B -DskipTests package
+
+        FROM eclipse-temurin:21-jre-jammy
+        WORKDIR /app
+        COPY --from=build /build/target/quarkus-app/ ./
+        EXPOSE 8081
+        ENTRYPOINT ["java", "-Dquarkus.http.host=0.0.0.0", "-jar", "quarkus-run.jar"]
+    depends_on:
+      api:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    environment:
+      TRANSPORT_API_URL: http://api:8080/api
+      KEYCLOAK_URL: http://keycloak:8080/realms/transit
+      OIDC_STATE_SECRET: ${OIDC_STATE_SECRET:-transit-admin-docker-secret-change-me-32chars}
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+
+volumes:
+  transit_db:

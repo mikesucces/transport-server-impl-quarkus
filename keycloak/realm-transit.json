@@ -1,0 +1,96 @@
+{
+  "realm": "transit",
+  "enabled": true,
+  "displayName": "Transit",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 1800,
+  "roles": {
+    "realm": [
+      { "name": "OWNER", "description": "Propriétaire : accès complet, y compris les données financières" },
+      { "name": "MANAGER", "description": "Gestionnaire : exploitation de la flotte, des lignes et des abonnements" },
+      { "name": "CONTROLLER", "description": "Contrôleur : vérification des embarquements" },
+      { "name": "DRIVER", "description": "Chauffeur : ses rotations et le kilométrage des cars" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "transport",
+      "name": "Transit - administration",
+      "description": "Application web d'administration (flux Authorization Code + PKCE)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "http://localhost:8081",
+      "baseUrl": "/",
+      "redirectUris": ["http://localhost:8081/*"],
+      "webOrigins": ["http://localhost:8081"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:8081/*"
+      }
+    },
+    {
+      "clientId": "transport-dev",
+      "name": "Transit - tests de l'API (développement uniquement)",
+      "description": "Permet d'obtenir un token avec identifiant et mot de passe (Postman, curl, Swagger). À ne jamais activer en production.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "Transit",
+      "email": "admin@transit.local",
+      "credentials": [{ "type": "password", "value": "Transit2026!", "temporary": false }],
+      "realmRoles": ["OWNER"]
+    },
+    {
+      "username": "manager",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Marie",
+      "lastName": "Gestionnaire",
+      "email": "manager@transit.local",
+      "credentials": [{ "type": "password", "value": "Transit2026!", "temporary": false }],
+      "realmRoles": ["MANAGER"]
+    },
+    {
+      "username": "controller",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Cédric",
+      "lastName": "Contrôleur",
+      "email": "controller@transit.local",
+      "credentials": [{ "type": "password", "value": "Transit2026!", "temporary": false }],
+      "realmRoles": ["CONTROLLER"]
+    },
+    {
+      "username": "driver",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "David",
+      "lastName": "Chauffeur",
+      "email": "driver@transit.local",
+      "credentials": [{ "type": "password", "value": "Transit2026!", "temporary": false }],
+      "realmRoles": ["DRIVER"]
+    }
+  ]
+}
