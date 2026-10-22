@@ -271,11 +271,12 @@ if idx is not None:
 # ---------------------------------------------------------------- Recherche et filtres
 pg = Page("/vehicles.xhtml")
 total = len(rows(pg.html))
-st, body = pg.ajax("listForm", "listForm:q", {"listForm:q": "Hiace"}, event="keyup",
+term = rows(pg.html)[0][1].split()[0]          # premier mot du premier car (independant des donnees)
+st, body = pg.ajax("listForm", "listForm:q", {"listForm:q": term}, event="keyup",
                    execute="listForm:q", render="listForm:table listForm:count")
-n_hiace = len(rows(html.unescape(body)))
-record("recherche: filtre les cars (Hiace)", 0 < n_hiace < total and "Coaster" not in body,
-       f"{n_hiace} resultats sur {total}")
+n_found = len(rows(html.unescape(body)))
+record(f"recherche: filtre les cars ({term})", 0 < n_found <= total and (n_found < total or total == 1),
+       f"{n_found} resultats sur {total}")
 st, body = pg.ajax("listForm", "listForm:q", {"listForm:q": "zzzzintrouvable"}, event="keyup",
                    execute="listForm:q", render="listForm:table listForm:count")
 record("recherche: aucun resultat affiche l'etat vide", "Aucun car trouvé" in html.unescape(body))

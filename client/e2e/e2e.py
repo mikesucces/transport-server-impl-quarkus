@@ -6,7 +6,9 @@ from html.parser import HTMLParser
 BASE = os.environ.get("ADMIN_URL", "http://localhost:8081")
 USER = os.environ.get("ADMIN_USER", "admin")
 PASSWORD = os.environ.get("ADMIN_PASSWORD", "Transit2026!")
-jar = http.cookiejar.CookieJar()
+# Keycloak 26 pose ses cookies de session en Secure meme sur http://localhost (accepte par les
+# navigateurs) : on l'autorise aussi ici.
+jar = http.cookiejar.CookieJar(policy=http.cookiejar.DefaultCookiePolicy(secure_protocols=("https", "http", "wss", "ws")))
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
 results = []
 

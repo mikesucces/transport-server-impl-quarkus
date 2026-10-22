@@ -100,7 +100,7 @@ public class UiBean {
     return switch (status == null ? "" : status) {
       case "DISPONIBLE", "ACTIVE", "TERMINEE", "TERMINE" -> "success";
       case "EN_SERVICE", "EN_ROTATION", "EN_COURS", "PLANIFIEE", "PLANIFIE", "RESERVEE" -> "info";
-      case "ENTRETIEN", "REPOS", "SUSPENDUE", "SUSPENDED", "EXPIRED" -> "warn";
+      case "ENTRETIEN", "REPOS", "SUSPENDUE", "SUSPENDED", "EXPIRED" -> "warning";
       case "HORS_SERVICE", "SUSPENDU", "DISABLED", "CANCELLED", "ANNULEE", "ANNULE" -> "danger";
       default -> "secondary";
     };
@@ -151,7 +151,7 @@ public class UiBean {
     if (days <= 7) {
       return "danger";
     }
-    return days <= 30 ? "warn" : "success";
+    return days <= 30 ? "warning" : "success";
   }
 
   /** Initiales pour les pastilles d'avatar (« Aya Kouassi » donne « AK »). */

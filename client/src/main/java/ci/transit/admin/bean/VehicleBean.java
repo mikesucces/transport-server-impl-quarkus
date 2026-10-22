@@ -107,7 +107,7 @@ public class VehicleBean extends FilterableList<VehicleDto> {
     return switch (status == null ? "" : status) {
       case "DISPONIBLE" -> "success";
       case "EN_SERVICE" -> "info";
-      case "ENTRETIEN" -> "warn";
+      case "ENTRETIEN" -> "warning";
       case "HORS_SERVICE" -> "danger";
       default -> "secondary";
     };
