@@ -1,0 +1,225 @@
+/* ==========================================================================
+   Transit Admin — couche "theme pro"
+   Charge apres admin.css : redefinit les jetons et affine les composants.
+   ========================================================================== */
+
+:root {
+  --font: "Inter", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+
+  --bg: #f3f4f8;
+  --surface: #ffffff;
+  --surface-2: #f8f9fc;
+  --ink: #0b1020;
+  --ink-2: #2d3550;
+  --muted: #6b7491;
+  --line: #e6e8f0;
+  --line-strong: #d3d7e4;
+
+  --nav-bg: #0b1020;
+  --nav-ink: #98a2c0;
+
+  --brand: #4f46e5;
+  --brand-600: #4338ca;
+  --brand-soft: #eceafd;
+  --accent: #06b6d4;
+
+  --success: #047857;  --success-soft: #dcf5e9;
+  --warn: #b45309;     --warn-soft: #fef0d4;
+  --danger: #be123c;   --danger-soft: #fde4ea;
+  --info: #0e7490;     --info-soft: #d9f3f9;
+  --neutral-soft: #ebedf5;
+
+  --radius: 14px;
+  --shadow-sm: 0 1px 2px rgba(11, 16, 32, .06);
+  --shadow: 0 1px 2px rgba(11, 16, 32, .04), 0 12px 32px -18px rgba(30, 27, 90, .22);
+  --shadow-lg: 0 30px 70px -24px rgba(11, 16, 32, .45);
+  --sidebar-w: 272px;
+}
+
+body.app-body {
+  background:
+    radial-gradient(900px 420px at 100% -10%, rgba(79, 70, 229, .07), transparent 60%),
+    radial-gradient(700px 380px at 0% 110%, rgba(6, 182, 212, .06), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  letter-spacing: -.003em;
+}
+::selection { background: rgba(79, 70, 229, .22); }
+
+/* ---------- Icones : alignement homogene ---------- */
+.pi { font-size: 1em; line-height: 1; }
+
+/* ---------- Barre laterale ---------- */
+.sidebar {
+  background:
+    radial-gradient(420px 260px at 0% 0%, rgba(79, 70, 229, .32), transparent 70%),
+    linear-gradient(180deg, #0d1226 0%, #0a0f1f 100%);
+  border-right: 1px solid rgba(255, 255, 255, .05);
+  padding: 22px 14px 14px;
+}
+.brand { padding: 2px 10px 20px; margin-bottom: 4px; border-bottom: 1px solid rgba(255, 255, 255, .06); }
+.brand-mark {
+  width: 40px; height: 40px; border-radius: 12px; font-size: 20px;
+  background: linear-gradient(135deg, #6366f1 0%, #4338ca 55%, #06b6d4 140%);
+  box-shadow: 0 10px 24px -8px rgba(99, 102, 241, .9), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+.brand-text strong { font-size: 18px; font-weight: 700; letter-spacing: -.2px; }
+.brand-text small { letter-spacing: .6px; text-transform: uppercase; font-size: 10px; font-weight: 600; color: #7683a8; margin-top: 2px; }
+
+.nav-label { color: #5b6688; padding: 20px 12px 7px; font-size: 10px; letter-spacing: 1.2px; }
+.nav-item {
+  gap: 12px; padding: 9px 12px; border-radius: 10px; font-size: 13.5px; font-weight: 500; color: var(--nav-ink);
+}
+.nav-item i {
+  width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 15px; opacity: 1;
+  background: rgba(255, 255, 255, .04); color: #8a95b6; transition: background .15s, color .15s;
+}
+.nav-item:hover { background: rgba(255, 255, 255, .05); color: #fff; }
+.nav-item:hover i { background: rgba(255, 255, 255, .09); color: #fff; }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(99, 102, 241, .28), rgba(99, 102, 241, .08)); color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(129, 140, 248, .22);
+}
+.nav-item.active i { background: linear-gradient(135deg, #6366f1, #4338ca); color: #fff; box-shadow: 0 6px 14px -6px rgba(99, 102, 241, .9); }
+.nav-item.active::before { left: -14px; background: #818cf8; width: 3px; box-shadow: 0 0 12px rgba(129, 140, 248, .8); }
+
+.user-card { background: rgba(255, 255, 255, .045); border: 1px solid rgba(255, 255, 255, .07); border-radius: 14px; }
+.avatar-lg { background: linear-gradient(135deg, #818cf8, #4338ca); box-shadow: 0 6px 14px -6px rgba(99, 102, 241, .8); }
+.logout { color: #8a95b6; }
+.logout:hover { background: rgba(244, 63, 94, .16); color: #fda4af; }
+
+/* ---------- En-tete collant ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 800;
+  padding: 18px 32px 14px; margin-bottom: 4px;
+  background: linear-gradient(180deg, rgba(243, 244, 248, .96) 70%, rgba(243, 244, 248, 0));
+  backdrop-filter: saturate(160%) blur(10px);
+}
+.page-title h1 { font-size: 25px; font-weight: 750; letter-spacing: -.5px; }
+.page-title p { font-size: 13.5px; }
+.page-title h1::before {
+  content: ""; display: inline-block; width: 4px; height: 22px; border-radius: 4px; margin-right: 12px; vertical-align: -3px;
+  background: linear-gradient(180deg, #6366f1, #06b6d4);
+}
+
+/* ---------- Cartes ---------- */
+.card { border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card-head { padding: 16px 22px; background: linear-gradient(180deg, #fff, var(--surface-2)); }
+.card-head h2 { font-size: 14.5px; font-weight: 650; letter-spacing: -.1px; }
+.card-icon { border-radius: 10px; }
+
+/* pastilles d'icone en degrade */
+.tone-blue   { background: linear-gradient(135deg, #e0e7ff, #eef2ff); color: #4338ca; }
+.tone-green  { background: linear-gradient(135deg, #cdf3e1, #e6f9f0); color: #047857; }
+.tone-amber  { background: linear-gradient(135deg, #fde7b5, #fff4db); color: #b45309; }
+.tone-red    { background: linear-gradient(135deg, #fcd5de, #ffe9ee); color: #be123c; }
+.tone-sky    { background: linear-gradient(135deg, #c8eef6, #e3f8fc); color: #0e7490; }
+.tone-slate  { background: linear-gradient(135deg, #e2e5f0, #f1f3f9); color: #2d3550; }
+
+/* ---------- Indicateurs ---------- */
+.kpi {
+  position: relative; overflow: hidden; padding: 18px 20px; border-radius: var(--radius);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.kpi::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--kpi-accent, linear-gradient(90deg, #6366f1, #06b6d4));
+  opacity: .9;
+}
+.kpi:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(11, 16, 32, .05), 0 22px 40px -22px rgba(67, 56, 202, .38); }
+.kpi .card-icon { width: 46px; height: 46px; border-radius: 13px; font-size: 20px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6); }
+.kpi-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+.kpi-value { font-size: 30px; font-weight: 750; letter-spacing: -1px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.meter { height: 7px; background: var(--neutral-soft); }
+.meter > span { background: linear-gradient(90deg, #6366f1, #06b6d4); }
+
+/* ---------- Boutons ---------- */
+body .ui-button {
+  background: linear-gradient(180deg, #5b52f0, #4338ca); border-color: #4338ca; border-radius: 10px; min-height: 40px;
+  box-shadow: 0 1px 2px rgba(67, 56, 202, .35), inset 0 1px 0 rgba(255, 255, 255, .18); letter-spacing: -.005em;
+}
+body .ui-button:enabled:hover {
+  background: linear-gradient(180deg, #4f46e5, #3730a3); border-color: #3730a3;
+  box-shadow: 0 10px 20px -10px rgba(67, 56, 202, .75), inset 0 1px 0 rgba(255, 255, 255, .18);
+}
+body .ui-button:focus-visible { outline: 3px solid rgba(79, 70, 229, .3); }
+body .ui-button.ui-button-flat { background: transparent; box-shadow: none; color: var(--ink-2); }
+body .ui-button.ui-button-secondary, body .ui-button.btn-outline { background: #fff; box-shadow: var(--shadow-sm); }
+body .ui-button.ui-button-secondary:enabled:hover, body .ui-button.btn-outline:enabled:hover { border-color: var(--brand); color: var(--brand-600); }
+body .ui-button.ui-button-danger { background: linear-gradient(180deg, #e11d48, #be123c); border-color: #be123c; }
+body .ui-button.ui-button-danger:enabled:hover { background: linear-gradient(180deg, #be123c, #9f1239); border-color: #9f1239; }
+body .ui-button.act { background: transparent; border-color: transparent; box-shadow: none; }
+body .ui-button.act:enabled:hover { background: var(--neutral-soft); box-shadow: none; }
+
+/* ---------- Champs ---------- */
+body .ui-inputfield, body .ui-inputnumber input, body .ui-selectonemenu, body .ui-datepicker-input, body .ui-inputtextarea {
+  border-radius: 10px; border-color: var(--line-strong); box-shadow: inset 0 1px 1px rgba(11, 16, 32, .03);
+}
+body .ui-inputfield:focus, body .ui-selectonemenu.ui-state-focus, body .ui-inputnumber input:focus {
+  border-color: var(--brand); box-shadow: 0 0 0 4px rgba(79, 70, 229, .14);
+}
+.search i { color: #8a93b0; }
+body .search .ui-inputfield { background: var(--surface-2); }
+body .search .ui-inputfield:focus { background: #fff; }
+body .ui-selectonemenu-panel .ui-selectonemenu-item.ui-state-highlight { background: var(--brand-soft); color: var(--brand-600); }
+body .ui-paginator .ui-paginator-page.ui-state-active { background: linear-gradient(180deg, #5b52f0, #4338ca); box-shadow: 0 6px 14px -8px rgba(67, 56, 202, .8); }
+.field > label, .field .ui-outputlabel { font-size: 12px; letter-spacing: .1px; }
+
+/* ---------- Tableaux ---------- */
+body .ui-datatable thead th {
+  background: var(--surface-2); font-size: 11px; letter-spacing: .8px; font-weight: 650; color: #7a83a0; padding: 12px 16px;
+}
+body .ui-datatable thead th.ui-state-active { background: var(--brand-soft); color: var(--brand-600); }
+body .ui-datatable tbody tr.ui-widget-content:hover { background: #f6f6ff; }
+body .ui-datatable tbody td { padding: 14px 16px; font-size: 13.5px; }
+.toolbar { background: #fff; }
+.plate {
+  border: 1.5px solid #1e2547; border-radius: 6px; background: linear-gradient(180deg, #fff, #f1f3fa); letter-spacing: .8px;
+  box-shadow: inset 0 0 0 2px #fff, 0 1px 0 rgba(11, 16, 32, .08); padding: 3px 10px;
+}
+.avatar { background: linear-gradient(135deg, #e0e7ff, #ddd6fe); color: #4338ca; }
+
+/* ---------- Etiquettes de statut ---------- */
+body .ui-tag { padding: 4px 11px; font-weight: 600; box-shadow: inset 0 0 0 1px rgba(11, 16, 32, .05); }
+body .ui-tag::before { width: 7px; height: 7px; box-shadow: 0 0 0 3px rgba(255, 255, 255, .6); }
+body .ui-tag.ui-tag-success { background: var(--success-soft); color: var(--success); }
+body .ui-tag.ui-tag-info { background: var(--info-soft); color: var(--info); }
+body .ui-tag.ui-tag-danger { background: var(--danger-soft); color: var(--danger); }
+
+/* ---------- Dialogues & messages ---------- */
+body .ui-dialog { border-radius: 18px; }
+body .ui-dialog .ui-dialog-titlebar { background: linear-gradient(180deg, #fff, var(--surface-2)); }
+body .ui-dialog .ui-dialog-title { font-weight: 700; }
+body .ui-widget-overlay { background: rgba(11, 16, 32, .55); backdrop-filter: blur(3px); }
+body .ui-growl-item-container { border-radius: 14px; }
+body .ui-growl-item-container.ui-growl-message-info { border-left-color: #10b981; }
+body .ui-growl-item-container.ui-growl-message-error { border-left-color: #e11d48; }
+body .ui-messages-error, body .ui-messages-warn { border-color: #f7b8c6; background: var(--danger-soft); color: var(--danger); }
+
+.empty-state i { background: linear-gradient(135deg, #eceafd, #e0f7fb); color: #6366f1; box-shadow: inset 0 0 0 1px rgba(99, 102, 241, .12); }
+
+/* ---------- Adaptatif ---------- */
+@media (max-width: 1100px) { .topbar { padding: 16px 24px 12px; } }
+@media (max-width: 900px) {
+  .topbar { padding: 14px 20px 10px 70px; }
+  .page-title h1::before { display: none; }
+}
+@media (max-width: 640px) {
+  .topbar { padding: 12px 14px 8px 66px; }
+  .kpi-value { font-size: 25px; }
+}
+@media (prefers-reduced-motion: reduce) { .kpi, .nav-item, body .ui-button { transition: none; } .kpi:hover { transform: none; } }
+
+/* ---------- Tri des colonnes : icone discrete ---------- */
+body .ui-datatable thead th .ui-sortable-column-icon { font-size: 11px; color: #a5adc5; vertical-align: middle; margin-left: 6px; }
+body .ui-datatable thead th.ui-state-active .ui-sortable-column-icon { color: var(--brand); }
+.brand-text strong { background: linear-gradient(90deg, #fff, #c7d2fe); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* PrimeFaces charge son theme apres : on force les boutons principaux */
+body .ui-button:not(.ui-button-flat):not(.ui-button-secondary):not(.btn-outline):not(.ui-button-danger):not(.act) {
+  background: linear-gradient(180deg, #5b52f0, #4338ca) !important; border-color: #4338ca !important; color: #fff !important;
+}
+body .ui-button:not(.ui-button-flat):not(.ui-button-secondary):not(.btn-outline):not(.ui-button-danger):not(.act):enabled:hover {
+  background: linear-gradient(180deg, #4f46e5, #3730a3) !important; border-color: #3730a3 !important;
+}
+body .ui-button.ui-button-danger { background: linear-gradient(180deg, #e11d48, #be123c) !important; border-color: #be123c !important; }
+body .ui-calendar .ui-datepicker-trigger { background: linear-gradient(180deg, #5b52f0, #4338ca) !important; }

@@ -124,7 +124,7 @@ quarkus.http.auth.permission.pages.policy=authenticated
 ```
 
 1. Un visiteur non connecté est redirigé vers la page de connexion Keycloak.
-2. Après connexion, Keycloak le renvoie vers l'administration (`http://localhost:8081/...`) avec un code.
+2. Après connexion, Keycloak le renvoie vers l'administration (`http://localhost:8081/transit/...`) avec un code.
 3. L'administration échange ce code contre un jeton et ouvre une session chiffrée.
 4. À chaque appel de l'API, le jeton de l'utilisateur est transmis (extension `rest-client-oidc-token-propagation`) :
    **c'est donc le rôle de la personne connectée qui est contrôlé par l'API**, pas celui d'un compte technique.

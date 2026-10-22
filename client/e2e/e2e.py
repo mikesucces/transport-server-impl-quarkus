@@ -3,7 +3,7 @@ requetes JSF/ajax des boutons (creation, changement de statut, suppression)."""
 import html, http.cookiejar, os, re, sys, urllib.parse, urllib.request, urllib.error
 from html.parser import HTMLParser
 
-BASE = os.environ.get("ADMIN_URL", "http://localhost:8081")
+BASE = os.environ.get("ADMIN_URL", "http://localhost:8081/transit")
 USER = os.environ.get("ADMIN_USER", "admin")
 PASSWORD = os.environ.get("ADMIN_PASSWORD", "Transit2026!")
 # Keycloak 26 pose ses cookies de session en Secure meme sur http://localhost (accepte par les

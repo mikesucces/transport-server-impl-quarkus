@@ -25,10 +25,10 @@ public class DashboardBean implements Serializable {
   private static final Map<String, String[]> FLEET_STATUSES = new LinkedHashMap<>();
 
   static {
-    FLEET_STATUSES.put("EN_SERVICE", new String[] {"En service", "#2563eb"});
-    FLEET_STATUSES.put("DISPONIBLE", new String[] {"Disponible", "#16a34a"});
+    FLEET_STATUSES.put("EN_SERVICE", new String[] {"En service", "#4f46e5"});
+    FLEET_STATUSES.put("DISPONIBLE", new String[] {"Disponible", "#10b981"});
     FLEET_STATUSES.put("ENTRETIEN", new String[] {"En entretien", "#f59e0b"});
-    FLEET_STATUSES.put("HORS_SERVICE", new String[] {"Hors service", "#dc2626"});
+    FLEET_STATUSES.put("HORS_SERVICE", new String[] {"Hors service", "#e11d48"});
   }
 
   @Inject
@@ -94,7 +94,7 @@ public class DashboardBean implements Serializable {
     return "{\"type\":\"doughnut\",\"data\":{\"labels\":[" + String.join(",", labels)
         + "],\"datasets\":[{\"data\":[" + String.join(",", data) + "],\"backgroundColor\":["
         + String.join(",", colors) + "],\"borderWidth\":3,\"borderColor\":\"#ffffff\",\"hoverOffset\":6}]},"
-        + "\"options\":{\"maintainAspectRatio\":false,\"cutout\":\"68%\","
+        + "\"options\":{\"maintainAspectRatio\":false,\"cutout\":\"72%\","
         + "\"plugins\":{\"legend\":{\"position\":\"bottom\",\"labels\":{\"usePointStyle\":true,\"padding\":16}}}}}";
   }
 }

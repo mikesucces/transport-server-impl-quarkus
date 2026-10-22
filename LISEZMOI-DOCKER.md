@@ -18,7 +18,7 @@ démarrent en moins d'une minute. Quand le terminal affiche que `admin` est dém
 
 | Service | Adresse | Identifiants |
 |---|---|---|
-| **Administration web** | http://localhost:8081 | `admin` / `Transit2026!` |
+| **Administration web** | http://localhost:8081/transit/index.xhtml | `admin` / `Transit2026!` |
 | **API** | http://localhost:8080/api | jeton Keycloak (voir plus bas) |
 | **Swagger UI** | http://localhost:8080/swagger-ui/ (spécification : `/openapi`) | bouton **Authorize** avec un jeton |
 | **Keycloak (console)** | http://localhost:8180 | `admin` / `admin` |

@@ -21,7 +21,7 @@ Interface en français, adaptée au téléphone (tableaux en cartes) et à la ta
 ## Lancer
 
 ```bash
-mvn quarkus:dev          # http://localhost:8081
+mvn quarkus:dev          # http://localhost:8081/transit/index.xhtml
 ```
 
 | Variable | Défaut | Rôle |
