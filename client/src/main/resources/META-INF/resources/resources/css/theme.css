@@ -223,3 +223,10 @@ body .ui-button:not(.ui-button-flat):not(.ui-button-secondary):not(.btn-outline)
 }
 body .ui-button.ui-button-danger { background: linear-gradient(180deg, #e11d48, #be123c) !important; border-color: #be123c !important; }
 body .ui-calendar .ui-datepicker-trigger { background: linear-gradient(180deg, #5b52f0, #4338ca) !important; }
+
+/* Valeurs longues (identifiants) : retour a la ligne plutot que debordement */
+.field .mono { overflow-wrap: anywhere; }
+
+/* Carte utilisateur toujours visible en bas du menu, meme si celui-ci defile */
+.user-card { position: sticky; bottom: 0; background: #11172e; }
+.nav-label { padding-top: 16px; }

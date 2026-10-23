@@ -7,6 +7,7 @@ import java.util.UUID;
 import ci.transit.system.transport.server.impl.ennumerations.PaymentMethod;
 import ci.transit.system.transport.server.impl.persistence.BaseEntity;
 import ci.transit.system.transport.server.impl.persistence.payment.PaymentAccount;
+import org.hibernate.envers.Audited;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -26,6 +27,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@Audited
 @Entity
 @Table(name = "payments")
 public class Payment extends BaseEntity {

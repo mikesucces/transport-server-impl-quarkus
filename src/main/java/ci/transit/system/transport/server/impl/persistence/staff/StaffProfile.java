@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import ci.transit.system.transport.server.impl.ennumerations.StaffType;
 import ci.transit.system.transport.server.impl.persistence.BaseEntity;
+import org.hibernate.envers.Audited;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,6 +24,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@Audited
 @Entity
 @Table(name = "staff_profiles")
 public class StaffProfile extends BaseEntity {

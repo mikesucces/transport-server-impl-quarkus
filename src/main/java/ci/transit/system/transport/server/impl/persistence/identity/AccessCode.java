@@ -5,6 +5,7 @@ import java.time.Instant;
 import ci.transit.system.transport.server.impl.persistence.BaseEntity;
 import ci.transit.system.transport.server.impl.persistence.fleet.Vehicle;
 import ci.transit.system.transport.server.impl.persistence.rotation.Rotation;
+import org.hibernate.envers.Audited;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
@@ -25,6 +26,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@Audited
 @Entity
 @Table(name = "access_codes")
 public class AccessCode extends BaseEntity {

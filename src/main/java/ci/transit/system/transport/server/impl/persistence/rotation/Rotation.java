@@ -7,6 +7,7 @@ import ci.transit.system.transport.server.impl.persistence.BaseEntity;
 import ci.transit.system.transport.server.impl.persistence.fleet.Driver;
 import ci.transit.system.transport.server.impl.persistence.fleet.Vehicle;
 import ci.transit.system.transport.server.impl.persistence.route.Route;
+import org.hibernate.envers.Audited;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -26,6 +27,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@Audited
 @Entity
 @Table(name = "rotations")
 public class Rotation extends BaseEntity {

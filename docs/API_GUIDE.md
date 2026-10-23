@@ -853,6 +853,24 @@ serveur vérifie qu'il appartient bien à l'usager de l'abonnement, sinon
 
 ---
 
+## 10sexies. Audit des données (`/audit`)
+
+Chaque table métier possède sa **table d'audit** `<table>_aud` (17 au total : `vehicles_aud`, `payments_aud`, `drivers_aud`…), alimentée automatiquement par Hibernate Envers à chaque création, modification ou suppression passant par l'API. Le schéma est créé par la migration `V18__audit_schema.sql`.
+
+| Table | Rôle |
+|---|---|
+| `<table>_aud` | Copie complète de la ligne après l'opération (avant pour une suppression), avec `rev` (numéro de révision) et `revtype` (0 création, 1 modification, 2 suppression) |
+| `revinfo` | Une ligne par transaction : `id` (= `rev`), `timestamp` (millisecondes) et `username` (nom d'utilisateur du jeton, `system` hors requête authentifiée) |
+
+Consultation (réservée au rôle **OWNER**) :
+
+| Méthode | Chemin | Description |
+|---|---|---|
+| GET | `/audit/tables` | Tables auditées et nombre de lignes d'audit de chacune |
+| GET | `/audit?table=vehicles&username=&entityId=&page=0&size=25` | Historique d'une table, du plus récent au plus ancien (`size` ≤ 200). `table` est obligatoire (liste blanche), `username` et `entityId` filtrent |
+
+Limites : l'historique commence à la migration V18 (pas d'état initial des lignes existantes) et une modification faite directement en SQL n'est pas tracée. L'administration web expose ce journal dans le menu **Journal d'audit** (OWNER).
+
 ## 11. Exemples rapides (curl, en local sans token)
 
 ```bash

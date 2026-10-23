@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<ui:composition template="/templates/layout.xhtml">
+  <ui:param name="pageTitle" value="Journal d'audit"/>
+  <ui:param name="pageSubtitle" value="Qui a créé, modifié ou supprimé quoi, et quand"/>
+
+  <ui:define name="actions">
+    <h:form id="actionsForm">
+      <p:commandButton value="Actualiser" icon="pi pi-refresh" styleClass="ui-button-secondary"
+                       action="#{auditBean.search}" update=":listForm :growl" process="@this"/>
+    </h:form>
+  </ui:define>
+
+  <ui:define name="content">
+    <h:form id="listForm">
+      <section class="card">
+        <div class="toolbar">
+          <p:selectOneMenu value="#{auditBean.table}" style="min-width:15rem">
+            <f:selectItems value="#{auditBean.tableCodes}" var="t" itemValue="#{t}"
+                           itemLabel="#{auditBean.tableLabel(t)} (#{auditBean.countOf(t)})"/>
+            <p:ajax listener="#{auditBean.reset}" update="table count username entityId"/>
+          </p:selectOneMenu>
+          <span class="search"><i class="pi pi-search"></i>
+            <p:inputText id="username" value="#{auditBean.username}" placeholder="Auteur (nom d'utilisateur)">
+              <p:ajax event="keyup" delay="400" listener="#{auditBean.search}" update="table count"/>
+            </p:inputText>
+          </span>
+          <span class="search"><i class="pi pi-key"></i>
+            <p:inputText id="entityId" value="#{auditBean.entityId}" placeholder="Identifiant de l'enregistrement">
+              <p:ajax event="keyup" delay="400" listener="#{auditBean.search}" update="table count"/>
+            </p:inputText>
+          </span>
+          <span class="grow"></span>
+          <h:outputText id="count" styleClass="result-count"
+                        value="#{auditBean.shown} sur #{auditBean.total} lignes"/>
+        </div>
+
+        <p:dataTable id="table" value="#{auditBean.entries}" var="e" rowKey="#{e.revision}-#{e.entityId}"
+                     paginator="true" rows="15" paginatorAlwaysVisible="false" paginatorPosition="bottom" reflow="true">
+          <f:facet name="emptyMessage">
+            <div class="empty-state"><i class="pi pi-clock"></i><strong>Aucune opération enregistrée</strong>
+              <span>Les créations, modifications et suppressions de cette table apparaîtront ici.</span></div>
+          </f:facet>
+          <p:column headerText="Date" sortBy="#{e.revision}" sortOrder="desc" style="width:11rem">
+            <span class="mono">#{ui.dateTime(e.timestamp)}</span>
+          </p:column>
+          <p:column headerText="Opération" sortBy="#{e.operation}">
+            <p:tag value="#{auditBean.operationLabel(e.operation)}" severity="#{auditBean.operationSeverity(e.operation)}"/>
+          </p:column>
+          <p:column headerText="Auteur" sortBy="#{e.username}">
+            <div class="cell-person"><span class="avatar">#{ui.initials(e.username)}</span>
+              <div><strong>#{e.username}</strong></div></div>
+          </p:column>
+          <p:column headerText="Enregistrement">
+            <strong>#{auditBean.summary(e)}</strong>
+            <span class="cell-sub mono">#{auditBean.shortId(e.entityId)}</span>
+          </p:column>
+          <p:column headerText="" style="width:7rem">
+            <div class="row-actions">
+              <p:commandButton icon="pi pi-search" title="Voir le détail" styleClass="act act-brand"
+                               action="#{auditBean.select(e)}" update=":detailForm" oncomplete="PF('detail').show()" process="@this"/>
+              <p:commandButton icon="pi pi-clock" title="Historique de cet enregistrement" styleClass="act"
+                               action="#{auditBean.followEntity(e)}" update="table count entityId" process="@this"/>
+            </div>
+          </p:column>
+        </p:dataTable>
+      </section>
+    </h:form>
+
+    <h:form id="detailForm">
+      <p:dialog header="Détail de l'opération" widgetVar="detail" modal="true" styleClass="dlg-md"
+                resizable="false" draggable="false" responsive="true">
+        <p:outputPanel rendered="#{auditBean.selected != null}">
+          <p>
+            <p:tag value="#{auditBean.operationLabel(auditBean.selected.operation)}"
+                   severity="#{auditBean.operationSeverity(auditBean.selected.operation)}"/>
+            <span class="muted"> par <strong>#{auditBean.selected.username}</strong> le #{ui.dateTime(auditBean.selected.timestamp)}</span>
+          </p>
+          <div class="form-grid">
+            <ui:repeat value="#{auditBean.selectedFields}" var="f">
+              <div class="field">
+                <label>#{f.key}</label>
+                <span class="mono">#{f.value}</span>
+              </div>
+            </ui:repeat>
+          </div>
+        </p:outputPanel>
+        <f:facet name="footer">
+          <p:commandButton value="Fermer" type="button" styleClass="ui-button-flat" onclick="PF('detail').hide()"/>
+        </f:facet>
+      </p:dialog>
+    </h:form>
+  </ui:define>
+</ui:composition>
+</html>

@@ -4,6 +4,7 @@ import java.time.LocalTime;
 
 import ci.transit.system.transport.server.impl.ennumerations.ScheduleDay;
 import ci.transit.system.transport.server.impl.persistence.BaseEntity;
+import org.hibernate.envers.Audited;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -22,6 +23,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@Audited
 @Entity
 @Table(name = "route_schedules")
 public class RouteSchedule extends BaseEntity {

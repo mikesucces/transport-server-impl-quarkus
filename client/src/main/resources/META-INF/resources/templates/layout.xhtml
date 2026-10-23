@@ -57,6 +57,12 @@
           <i class="pi pi-ticket"></i><span>Abonnements</span></h:link>
         <h:link outcome="/rentals" styleClass="nav-item #{view.viewId eq '/rentals.xhtml' ? 'active' : ''}">
           <i class="pi pi-key"></i><span>Locations</span></h:link>
+
+        <h:panelGroup rendered="#{currentUser.role eq 'OWNER'}">
+          <div class="nav-label">Administration</div>
+          <h:link outcome="/audit" styleClass="nav-item #{view.viewId eq '/audit.xhtml' ? 'active' : ''}">
+            <i class="pi pi-shield"></i><span>Journal d'audit</span></h:link>
+        </h:panelGroup>
       </nav>
 
       <div class="user-card">

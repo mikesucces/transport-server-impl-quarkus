@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import ci.transit.system.transport.server.impl.ennumerations.MaintenanceStatus;
 import ci.transit.system.transport.server.impl.ennumerations.MaintenanceType;
 import ci.transit.system.transport.server.impl.persistence.BaseEntity;
+import org.hibernate.envers.Audited;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -25,6 +26,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@Audited
 @Entity
 @Table(name = "maintenances")
 public class Maintenance extends BaseEntity {

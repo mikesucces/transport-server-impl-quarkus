@@ -7,6 +7,7 @@ import ci.transit.system.transport.server.impl.persistence.BaseEntity;
 import ci.transit.system.transport.server.impl.persistence.identity.AccessCode;
 import ci.transit.system.transport.server.impl.persistence.identity.Passenger;
 import ci.transit.system.transport.server.impl.persistence.rotation.Rotation;
+import org.hibernate.envers.Audited;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
@@ -24,6 +25,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@Audited
 @Entity
 @Table(name = "attendances")
 public class Attendance extends BaseEntity {

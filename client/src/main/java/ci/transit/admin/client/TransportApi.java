@@ -8,6 +8,8 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 import io.quarkus.oidc.token.propagation.AccessToken;
 
+import ci.transit.admin.dto.AuditPageDto;
+import ci.transit.admin.dto.AuditTableDto;
 import ci.transit.admin.dto.DashboardDto;
 import ci.transit.admin.dto.DocumentDto;
 import ci.transit.admin.dto.DocumentRequest;
@@ -231,4 +233,14 @@ public interface TransportApi {
   @DELETE
   @Path("/rotations/{id}")
   void deleteRotation(@PathParam("id") UUID id);
+
+  // ---------- Audit (reserve OWNER) ----------
+  @GET
+  @Path("/audit/tables")
+  List<AuditTableDto> auditTables();
+
+  @GET
+  @Path("/audit")
+  AuditPageDto audit(@QueryParam("table") String table, @QueryParam("username") String username,
+      @QueryParam("entityId") String entityId, @QueryParam("page") int page, @QueryParam("size") int size);
 }
